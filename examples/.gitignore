@@ -1,0 +1,6 @@
+*.asc
+*.vcd
+*.vvp
+*.json
+*.bin
+*.timings
