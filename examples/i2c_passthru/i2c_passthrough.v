@@ -9,10 +9,10 @@ module i2c_passthrough(
     output reg ICE_LED
 );
 
-reg [15:0] counter = 0;
+reg [24:0] counter = 0;
 always @(posedge ICE_CLK) begin
     counter <= counter + 1;
-//    ICE_LED <= counter[15];
+    ICE_LED <= counter[23];
 end
 
 

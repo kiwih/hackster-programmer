@@ -13,7 +13,7 @@ SYNTH_TOP_MODULE = rgb_demo
 SIM_TOP_MODULE = rgb_demo_tb
 
 # Programmer port
-PROG_PORT = /dev/ttyACM1
+PROG_PORT = /dev/ttyACM0
 
 # Chip settings
 FREQUENCY = 25

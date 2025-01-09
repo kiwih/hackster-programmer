@@ -13,7 +13,7 @@ SYNTH_TOP_MODULE = i2c_passthrough
 SIM_TOP_MODULE = i2c_passthrough_tb
 
 # Programmer port
-PROG_PORT = /dev/ttyACM1
+PROG_PORT ?= /dev/ttyACM1
 
 # Chip settings
 FREQUENCY = 10
