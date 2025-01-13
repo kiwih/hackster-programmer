@@ -1,7 +1,7 @@
 #ignore everything except the empty directory and this .gitignore file
 /*
-!empty/
-!empty/*
+!empty-project/
+!empty-project/*
 !.gitignore
 
 *.asc
