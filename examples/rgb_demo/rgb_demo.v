@@ -1,3 +1,5 @@
+`default_nettype none
+
 module rgb_demo (
     input wire ICE_CLK,
     input wire PI_ICE_BTN,
@@ -169,12 +171,13 @@ always @(posedge clk_500Hz) begin
     endcase
 end
 
+//used to set maximum brightness of the RGB LEDs
 defparam RGB_DRV.CURRENT_MODE = "0b0";
 defparam RGB_DRV.RGB0_CURRENT = "0b000111"; //r
 defparam RGB_DRV.RGB1_CURRENT = "0b000111"; //g
 defparam RGB_DRV.RGB2_CURRENT = "0b001111"; //b
 
-// 25MHz clock divider to 1Hz
+// 10MHz clock divider to 1Hz
 reg [23:0] counter;
 reg led_state = 0;
 always @(posedge CLK_10MHz) begin

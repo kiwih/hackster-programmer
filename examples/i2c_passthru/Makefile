@@ -13,7 +13,7 @@ SYNTH_TOP_MODULE = i2c_passthrough
 SIM_TOP_MODULE = i2c_passthrough_tb
 
 # Programmer port
-PROG_PORT ?= /dev/ttyACM1
+FPGA_PORT ?= /dev/ttyACM1
 
 # Chip settings
 FREQUENCY = 10
@@ -37,7 +37,7 @@ BITSTREAM = $(SYNTH_TOP_MODULE).bin
 
 #### Docker commands ####
 # Docker command for accessing the image
-DOCKER = docker run -t -v .:/mount --device=$(PROG_PORT) hackster-deps:v1
+DOCKER = docker run -t -v .:/mount --device=$(FPGA_PORT) hackster-deps:v1
 
 #### Simulation tools/settings ####
 # Specify the simulator
@@ -110,10 +110,10 @@ clean:
 
 ### Programming targets ###
 program: bitstream
-	$(PROGRAMMER) w $(BITSTREAM) $(PROG_PORT) 
+	$(PROGRAMMER) w $(BITSTREAM) $(FPGA_PORT) 
 
 program_power: bitstream
-	$(PROGRAMMER) p $(BITSTREAM) $(PROG_PORT)
+	$(PROGRAMMER) p $(BITSTREAM) $(FPGA_PORT)
 
 # ==============================================================================
 # Recipe area
