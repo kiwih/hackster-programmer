@@ -126,10 +126,10 @@ run_sim: compile_sim simulate view
 run_synth: timing bitstream
 
 # Programmer
-run_prog: run_synth program
+run_fpga: run_synth program
 
 # Programmer and power measurement
-run_power: run_synth program_power
+run_fpga_power: run_synth program_power
 
 # Phony targets for make
-.PHONY: synth pnr timing bitstream run_sim run_synth run_prog run_power
+.PHONY: synth pnr timing bitstream run_sim run_synth run_fpga run_fpga_power

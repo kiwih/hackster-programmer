@@ -1,0 +1,12 @@
+#ignore everything except the empty directory and this .gitignore file
+/*
+!empty/
+!empty/*
+!.gitignore
+
+*.asc
+*.vcd
+*.vvp
+*.json
+*.bin
+*.timings
