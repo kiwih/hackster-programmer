@@ -220,6 +220,7 @@ case(state)
             end else begin
                 i2c_buf_ld_tx <= 1;
                 i2c_buf_cnt_clr <= 1;
+                i2c_data_tx_loaded_stb <= 1;
                 next_state <= S_DATA_TX;
             end
         end else

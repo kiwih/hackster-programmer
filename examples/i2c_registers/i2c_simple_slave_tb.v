@@ -62,9 +62,10 @@ module i2c_simple_slave_tb();
 
     task test_i2c_master_test_stretch_tx_ack;
         input want_stretch;
-        //check ack
+        //send ack
         sda_di = 1;
-        scl_di = 0; #20; 
+        scl_di = 0; #20; scl_di = 1; #10; scl_di = 0;
+        #20;
         if(scl_ndo == 0 && want_stretch) begin
             $display("Error: Clock stretching not working");
             $finish;
@@ -74,8 +75,6 @@ module i2c_simple_slave_tb();
             stall = 0;
             #1; //this is in case of clock stretching
         end
-        scl_di = 0; #20; scl_di = 1; #10; scl_di = 0;
-        #20;
     endtask
 
     task test_i2c_master_send_interbyte_gap;
@@ -421,139 +420,74 @@ module i2c_simple_slave_tb();
         end 
 
         
-        /*
         test_num = test_num + 1;
         ///////////////////////////////////////////
         $display("\nTest %d: Read Two Bytes", test_num);
         ///////////////////////////////////////////
 
-        i2c_data_wr = 8'h45;
-        i2c_master_to_send = {i2c_addr_to_send, 1'b1};
+        i2c_data_tx = 8'hF0;
+        i2c_data_tx_loaded_TB_CAPTURE = 0;
 
         //send start bit
-        sda_di = 0;
-        scl_di = 1;
-        #50;
-        sda_di = 0;
-        scl_di = 0;
-        #50;
-
+        test_i2c_master_send_startbit();
         //send addr and r/w
-        for(i = 0; i < 8; i = i + 1) begin
-            sda_di = i2c_master_to_send[7-i];
-            scl_di = 0; #20; scl_di = 1;  #10; scl_di = 0;
-            #20;
-        end
-
+        test_i2c_master_send_byte({i2c_addr_to_send, 1'b1});
         //check ack
-        sda_di = 0;
-        scl_di = 0; #20; 
-        if(scl_ndo == 1) begin
-            $display("Error: Unexpected clock stretch");
-            $finish;
-        end
-        scl_di = 1; sda_ndo_reg = sda_ndo; #10; scl_di = 0;
-        if(sda_ndo_reg == 1) begin
-            $display("ACK received correctly");
-        end else begin
-            $display("Error: ACK not received");
-            $finish;
-        end
-        #20;
-
+        test_i2c_master_test_stretch_rx_ack(0, 1);
         //gap data
-        sda_di = 1;
-        scl_di = 0;
-        #50;
-        sda_di = 0;
-        scl_di = 0;
-        #50;
-
-        i2c_data_wr_finish_stb_capture = 0;
-
+        test_i2c_master_send_interbyte_gap();
         //receive data
-        for(i = 0; i < 8; i = i + 1) begin
-            sda_di = 0;
-            scl_di = 0; #20; scl_di = 1;
-            i2c_master_data_received[7-i] = sda_ndo; 
-            #10; scl_di = 0;
-            #20;
-        end
+        test_i2c_master_receive_byte(i2c_master_data_received);
 
-        if(i2c_master_data_received == i2c_data_wr) begin
+        if(i2c_master_data_received == 8'hF0) begin
             $display("Data received correctly");
         end else begin
             $display("Error: Data not received correctly");
-            $display("Expected: %h", i2c_data_wr);
+            $display("Expected: %h", 8'hF0);
             $display("Received: %h", i2c_master_data_received);
             $finish;
         end
 
-        if(i2c_data_wr_finish_stb_capture == 1)
+        if(i2c_data_tx_loaded_TB_CAPTURE == 1)
             $display("Data write strobe happened correctly");
         else begin
             $display("Error: Data write strobe not received");
             $finish;
         end
-        i2c_data_wr_finish_stb_capture = 0;
-
+        i2c_data_tx_loaded_TB_CAPTURE = 0;
+        i2c_data_tx = 8'h1A;
 
         //issue ack
-        sda_di = 1;
-        scl_di = 0; #20; 
-        if(scl_ndo == 1) begin
-            $display("Error: Unexpected clock stretch");
-            $finish;
-        end
-        scl_di = 1; #10; scl_di = 0;
-        #20;
-
+        test_i2c_master_test_stretch_tx_ack(0);
         //gap data
-        sda_di = 1;
-        scl_di = 0;
-        #50;
-        sda_di = 0;
-        scl_di = 0;
-        #50;
-
-        i2c_data_wr = 8'hF0;
-        
-        i2c_data_wr_finish_stb_capture = 0;
-
+        test_i2c_master_send_interbyte_gap();
         //receive data
-        for(i = 0; i < 8; i = i + 1) begin
-            sda_di = 0;
-            scl_di = 0; #20; scl_di = 1;
-            i2c_master_data_received[7-i] = sda_ndo; 
-            #10; scl_di = 0;
-            #20;
-        end
+        test_i2c_master_receive_byte(i2c_master_data_received);
 
-        if(i2c_master_data_received == i2c_data_wr) begin
+        if(i2c_master_data_received == 8'h1A) begin
             $display("Data received correctly");
         end else begin
             $display("Error: Data not received correctly");
-            $display("Expected: %h", i2c_data_wr);
+            $display("Expected: %h", 8'h1A);
             $display("Received: %h", i2c_master_data_received);
             $finish;
         end
 
-        if(i2c_data_wr_finish_stb_capture == 1) 
+        if(i2c_data_tx_loaded_TB_CAPTURE == 1) 
             $display("Data write strobe happened correctly");
         else begin
             $display("Error: Data write strobe not received");
             $finish;
         end
         
-        
-        i2c_data_wr_finish_stb_capture = 0;
+        i2c_data_tx_loaded_TB_CAPTURE = 0;
 
-
+        //issue ack
+        test_i2c_master_test_stretch_tx_ack(0);
+        //gap data
+        test_i2c_master_send_interbyte_gap();
         //send stop bit
-        scl_di = 1;
-        #20
-        sda_di = 1;
-        #20;
+        test_i2c_master_send_stopbit();
 
         if(i2c_simple_slave_inst.state == i2c_simple_slave_inst.S_IDLE) begin
             $display("i2c state is correctly idle after transaction");
@@ -561,7 +495,7 @@ module i2c_simple_slave_tb();
             $display("Error: i2c state not idle");
             $finish;
         end
-        if(error_capture) begin
+        if(i2c_error_TB_CAPTURE) begin
             $display("Error: i2c module improperly flagged error");
             $finish;
         end
