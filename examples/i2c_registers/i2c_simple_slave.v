@@ -8,6 +8,9 @@
 // scl_di: input SCL from pins 
 // sda_di: input SDA from pins
 // i2c_data_wr: data to be transmitted on the I2C bus
+// i2c_addr_stall: clock stretch after address is received while this is 1
+// i2c_data_rd_stall: clock stretch after data is received while this is 1
+// i2c_data_wr_stall: clock stretch after data is transmitted while this is 1
 //outputs:
 // scl_ndo: output SCL to pins (use as output enable)
 // sda_ndo: output SDA to pins (use as output enable)
@@ -27,10 +30,13 @@ module i2c_simple_slave #(
     output reg scl_ndo,
     output reg sda_ndo,
 
+    input wire i2c_addr_stall,
+    input wire i2c_data_rd_stall,
     output reg [7:0] i2c_data_rd,
     output reg i2c_data_rd_valid_stb,
     input wire [7:0] i2c_data_wr,
     output reg i2c_data_wr_finish_stb,
+    input wire i2c_data_wr_stall,
     output reg i2c_error_stb
 );
 
@@ -109,17 +115,17 @@ always@(posedge clk or negedge rst_n) begin
         //it also will emit the strobe so the parent module knows data is going out
         if(i2c_tx_ld == 1) begin
             i2c_rxtx_reg <= i2c_data_wr;
-            i2c_data_wr_finish_stb <= 1;
             i2c_rxtx_cnt <= 0;
             i2c_rxtx_done <= 0;
         end
         //if tx enabled, on each falling edge shift out a bit
         if(i2c_tx_en == 1 && scl_falling_edge) begin
             i2c_rxtx_reg[7:0] = {i2c_rxtx_reg[6:0], 1'b0};
-            if(i2c_rxtx_cnt < 3'd6) begin //falling edge means we finish 1 bit early
+            if(i2c_rxtx_cnt < 3'd7) begin //falling edge means we finish 1 bit early
                 i2c_rxtx_cnt <= i2c_rxtx_cnt + 1;
             end
             else begin
+                i2c_data_wr_finish_stb <= 1;
                 i2c_rxtx_done <= 1;
             end
         end
@@ -133,16 +139,19 @@ end
 localparam  S_IDLE      = 4'h0, 
             S_START     = 4'h1, 
             S_ADDR_RX   = 4'h2,
-            S_ADDR_ACK  = 4'h3,
+            S_ADDR_STALL= 4'h3,
+            S_ADDR_ACK  = 4'h4,
 
-            S_DATA_WAIT = 4'h4, 
+            S_DATA_WAIT = 4'h5, 
 
-            S_DATA_RX      = 4'h5,
-            S_DATA_RX_ACK  = 4'h6,
+            S_DATA_RX       = 4'h6,
+            S_DATA_RX_STALL = 4'h7,
+            S_DATA_RX_ACK   = 4'h8,
 
-            S_DATA_TX_LD   = 4'h7,
-            S_DATA_TX      = 4'h8,
-            S_DATA_TX_ACK  = 4'h9,
+            S_DATA_TX_LD   = 4'h9,
+            S_DATA_TX      = 4'hA,
+            S_DATA_TX_STALL= 4'hB,
+            S_DATA_TX_ACK  = 4'hC,
 
             S_ERROR     = 4'hD,
             S_IGNORE    = 4'hE,
@@ -160,10 +169,12 @@ end
 
 
 reg i2c_ack = 0;
+reg i2c_clock_stretch = 0;
 
 //TODO: if clock stretching, this would occur prior to any slave-controlled ACK
 // see https://vanhunteradams.com/Protocols/I2C/I2C.html clock stretch figure
 always@* begin
+    i2c_clock_stretch <= 0;
     i2c_rxtx_clr <= 0;
     i2c_rx_en <= 0;
     i2c_tx_ld <= 0;
@@ -195,14 +206,22 @@ case(state)
             next_state <= S_ERROR;
         else if(scl_falling_edge == 1 && i2c_rxtx_done == 1) begin
             if(i2c_rx_addr_r_w[7:1] == i2c_address) begin
-                next_state <= S_ADDR_ACK;
+                next_state <= (i2c_addr_stall ? S_ADDR_STALL : S_ADDR_ACK);
             end else
                 next_state <= S_IGNORE; //this one is not for us
         end else
             next_state <= S_ADDR_RX;
     end
+    S_ADDR_STALL: begin
+        i2c_clock_stretch <= 1;
+        if(i2c_addr_stall == 1) begin
+            next_state <= S_ADDR_STALL;
+        end else
+            next_state <= S_ADDR_ACK;
+    end
     S_ADDR_ACK: begin //send ACK
         i2c_ack <= 1;
+        
         i2c_rxtx_clr <= 1;
         if(sda_rising_edge == 1 && scl_di_reg == 1)
             //this is an error, this shouldn't happen until post addr accept
@@ -211,6 +230,7 @@ case(state)
             next_state <= S_DATA_WAIT;
         else
             next_state <= S_ADDR_ACK;
+        
     end
 
     S_DATA_WAIT: begin
@@ -240,9 +260,16 @@ case(state)
             //this is an error, this shouldn't happen mid-byte
             next_state <= S_ERROR;
         else if(scl_falling_edge == 1 && i2c_rxtx_done == 1)
-            next_state <= S_DATA_RX_ACK;
+            next_state <= (i2c_data_rd_stall ? S_DATA_RX_STALL : S_DATA_RX_ACK);
         else
             next_state <= S_DATA_RX;
+    end
+    S_DATA_RX_STALL: begin
+        i2c_clock_stretch <= 1;
+        if(i2c_data_rd_stall == 1) 
+            next_state <= S_DATA_RX_STALL;
+        else
+            next_state <= S_DATA_RX_ACK;
     end
     S_DATA_RX_ACK: begin
         i2c_ack <= 1;
@@ -270,20 +297,33 @@ case(state)
             //this is an error, this shouldn't happen mid-byte
             next_state <= S_ERROR;
         else if(scl_falling_edge == 1 && i2c_rxtx_done == 1)
-            next_state <= S_DATA_TX_ACK;
+            next_state <= (i2c_data_wr_stall ? S_DATA_TX_STALL : S_DATA_TX_ACK);
         else
             next_state <= S_DATA_TX;
     end
 
-    S_DATA_TX_ACK: begin
-        //unlike with the RX_ACK, the ACK actually comes from the master
-        if(scl_rising_edge == 1) 
-            if(sda_di_reg == 1)
-                next_state <= S_DATA_WAIT;
-            else
-                next_state <= S_ERROR; //the master didn't ack for some reason
+    S_DATA_TX_STALL: begin
+        i2c_clock_stretch <= 1;
+        if(i2c_data_wr_stall == 1) 
+            next_state <= S_DATA_TX_STALL;
         else
             next_state <= S_DATA_TX_ACK;
+    end
+
+    S_DATA_TX_ACK: begin
+        //unlike with the RX_ACK, the ACK actually comes from the master
+        if(i2c_data_wr_stall == 1) begin
+            i2c_clock_stretch <= 1;
+            next_state <= S_DATA_TX_ACK;
+        end else begin
+            if(scl_rising_edge == 1) 
+                if(sda_di_reg == 1)
+                    next_state <= S_DATA_WAIT;
+                else
+                    next_state <= S_ERROR; //the master didn't ack for some reason
+            else
+                next_state <= S_DATA_TX_ACK;
+        end
     end
 
     S_IGNORE: begin
@@ -306,7 +346,7 @@ case(state)
 endcase
 end
 
-assign scl_ndo = 0;
+assign scl_ndo = 0 | i2c_clock_stretch;
 assign sda_ndo = 0 | i2c_ack | (i2c_tx_en ? i2c_rxtx_reg[7] : 0);
 
 
