@@ -86,6 +86,16 @@ module i2c_simple_slave_tb();
         #50;
     endtask
 
+    task test_i2c_master_send_restartbit;
+        sda_di = 1;
+        scl_di = 0;
+        #50
+        sda_di = 1;
+        scl_di = 1;
+        #50
+        test_i2c_master_send_startbit();
+    endtask
+
     task test_i2c_master_send_stopbit;
         scl_di = 1;
         #20
@@ -500,19 +510,142 @@ module i2c_simple_slave_tb();
             $finish;
         end
 
-        //todo
+        ///////////////////////////////////////////
+        $display("\nTest %d: Read Two Bytes With Stretching", test_num);
+        ///////////////////////////////////////////
 
+        i2c_data_tx = 8'h23;
+        i2c_data_tx_loaded_TB_CAPTURE = 0;
+        stall = 1;
 
-        ///////////////////////////////
-        //////TEST 6: RESTART//////////
-        ///////////////////////////////
+        //send start bit
+        test_i2c_master_send_startbit();
+        //send addr and r/w
+        test_i2c_master_send_byte({i2c_addr_to_send, 1'b1});
+        //check ack
+        test_i2c_master_test_stretch_rx_ack(1, 1);
+        stall = 1;
+        //gap data
+        test_i2c_master_send_interbyte_gap();
+        //receive data
+        test_i2c_master_receive_byte(i2c_master_data_received);
 
-        //todo
+        if(i2c_master_data_received == 8'h23) begin
+            $display("Data received correctly");
+        end else begin
+            $display("Error: Data not received correctly");
+            $display("Expected: %h", 8'h23);
+            $display("Received: %h", i2c_master_data_received);
+            $finish;
+        end
 
-        ///////////////////////////////
-        //////TEST 7: CLOCK STRETCH////
-        ///////////////////////////////
+        if(i2c_data_tx_loaded_TB_CAPTURE == 1)
+            $display("Data write strobe happened correctly");
+        else begin
+            $display("Error: Data write strobe not received");
+            $finish;
+        end
+        i2c_data_tx_loaded_TB_CAPTURE = 0;
+        i2c_data_tx = 8'h11;
 
+        //issue ack
+        test_i2c_master_test_stretch_tx_ack(1);
+        stall = 1;
+        //gap data
+        test_i2c_master_send_interbyte_gap();
+        //receive data
+        test_i2c_master_receive_byte(i2c_master_data_received);
+
+        if(i2c_master_data_received == 8'h11) begin
+            $display("Data received correctly");
+        end else begin
+            $display("Error: Data not received correctly");
+            $display("Expected: %h", 8'h11);
+            $display("Received: %h", i2c_master_data_received);
+            $finish;
+        end
+
+        if(i2c_data_tx_loaded_TB_CAPTURE == 1) 
+            $display("Data write strobe happened correctly");
+        else begin
+            $display("Error: Data write strobe not received");
+            $finish;
+        end
+        
+        i2c_data_tx_loaded_TB_CAPTURE = 0;
+
+        //issue ack
+        test_i2c_master_test_stretch_tx_ack(1);
+        //gap data
+        test_i2c_master_send_interbyte_gap();
+        //send stop bit
+        test_i2c_master_send_stopbit();
+
+        if(i2c_simple_slave_inst.state == i2c_simple_slave_inst.S_IDLE) begin
+            $display("i2c state is correctly idle after transaction");
+        end else begin
+            $display("Error: i2c state not idle");
+            $finish;
+        end
+        if(i2c_error_TB_CAPTURE) begin
+            $display("Error: i2c module improperly flagged error");
+            $finish;
+        end
+
+        ///////////////////////////////////////////
+        $display("\nTest %d: Restart with write then read", test_num);
+        ///////////////////////////////////////////
+
+        i2c_data_tx = 8'hFE;
+        i2c_data_tx_loaded_TB_CAPTURE = 0;
+        stall = 0;
+
+        //send start bit
+        test_i2c_master_send_startbit();
+        //send addr and r/w
+        test_i2c_master_send_byte({i2c_addr_to_send, 1'b0});
+        //check ack
+        test_i2c_master_test_stretch_rx_ack(0, 1);
+        //gap data
+        test_i2c_master_send_interbyte_gap();
+        //send data
+        test_i2c_master_send_byte(8'hAB);
+        //check ack
+        test_i2c_master_test_stretch_rx_ack(0, 1);
+
+        if(i2c_data_rx_TB_CAPTURE == 8'hAB) begin
+            $display("Data received correctly");
+        end else begin
+            $display("Error: Data not received correctly");
+            $finish;
+        end
+
+        //gap data / restart
+        test_i2c_master_send_restartbit();
+        //send addr and r/w
+        test_i2c_master_send_byte({i2c_addr_to_send, 1'b1});
+        //check ack
+        test_i2c_master_test_stretch_rx_ack(0, 1);
+        //gap data
+        test_i2c_master_send_interbyte_gap();
+        //receive data
+        test_i2c_master_receive_byte(i2c_master_data_received);
+
+        if(i2c_master_data_received == 8'hFE) begin
+            $display("Data received correctly");
+        end else begin
+            $display("Error: Data not received correctly");
+            $display("Expected: %h", 8'hFE);
+            $display("Received: %h", i2c_master_data_received);
+            $finish;
+        end
+
+        //issue ack
+        test_i2c_master_test_stretch_tx_ack(0);
+        //gap data
+        test_i2c_master_send_interbyte_gap();
+        //send stop bit
+        test_i2c_master_send_stopbit();
         //*/
         $display("ALL TESTS PASSED");
 
