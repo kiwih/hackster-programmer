@@ -262,12 +262,11 @@ case(state)
             i2c_buf_tx_shift_en <= 1;
             i2c_buf_cnt_en <= 1;
             next_state <= S_DATA_TX;
-        end else if(i2c_buf_cnt != 3'h7) 
-            next_state <= S_DATA_TX;
-        else if(i2c_buf_cnt == 7) begin
+        end else if(scl_falling_edge == 1 && i2c_buf_cnt == 7) begin
             i2c_data_tx_done_stb <= 1;
             next_state <= S_DATA_TX_ACK;
-        end
+        end else  
+            next_state <= S_DATA_TX;
     end
 
     S_DATA_TX_ACK: begin
