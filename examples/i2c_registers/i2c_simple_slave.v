@@ -196,10 +196,14 @@ case(state)
     end
 
     S_STALL: begin
-        if(stall == 1)
+        if(stall == 1) begin
+            i2c_clock_stretch <= 1;
             next_state <= S_STALL;
-        else
+        end else begin
+            i2c_clock_stretch <= 1; //we'll always stall at least 1 clock cycle 
+                                    //  for stability reasons
             next_state <= S_DATA_WAIT;
+        end
     end
     
     S_DATA_WAIT: begin
