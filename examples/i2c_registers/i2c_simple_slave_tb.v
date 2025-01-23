@@ -26,22 +26,22 @@ module i2c_simple_slave_tb();
         //check ack
         sda_di = 0;
         scl_di = 0; #20; 
-        scl_di = 1; sda_ndo_reg = sda_ndo; #10; scl_di = 0;
-        if(sda_ndo_reg == 1 && want_ack) begin
+        scl_di = 1; sda_pulldown_reg = sda_pulldown; #10; scl_di = 0;
+        if(sda_pulldown_reg == 1 && want_ack) begin
             $display("ACK received correctly");
-        end else if(sda_ndo_reg == 0 && !want_ack) begin
+        end else if(sda_pulldown_reg == 0 && !want_ack) begin
             $display("ACK not received correctly");
         end else begin
-            $display("Error: ACK incorrect, want_ack=%b, got_ack=%b", want_ack, sda_ndo_reg);
+            $display("Error: ACK incorrect, want_ack=%b, got_ack=%b", want_ack, sda_pulldown_reg);
             $finish;
         end
         #20;
-        if(scl_ndo == 0 && want_stretch) begin
+        if(scl_pulldown == 0 && want_stretch) begin
             $display("Error: Clock stretching not working");
             $finish;
         end
         $display("Clock stretch good");
-        while(scl_ndo == 1) begin
+        while(scl_pulldown == 1) begin
             stall = 0;
             #1; //this is in case of clock stretching
         end
@@ -54,7 +54,7 @@ module i2c_simple_slave_tb();
         for(i = 0; i < 8; i = i + 1) begin
             sda_di = 0;
             scl_di = 0; #20; scl_di = 1;
-            receive_byte[7-i] = sda_ndo; 
+            receive_byte[7-i] = sda_pulldown; 
             #10; scl_di = 0;
             #20;
         end
@@ -66,12 +66,12 @@ module i2c_simple_slave_tb();
         sda_di = 1;
         scl_di = 0; #20; scl_di = 1; #10; scl_di = 0;
         #20;
-        if(scl_ndo == 0 && want_stretch) begin
+        if(scl_pulldown == 0 && want_stretch) begin
             $display("Error: Clock stretching not working");
             $finish;
         end
         $display("Clock stretch good");
-        while(scl_ndo == 1) begin
+        while(scl_pulldown == 1) begin
             stall = 0;
             #1; //this is in case of clock stretching
         end
@@ -108,9 +108,9 @@ module i2c_simple_slave_tb();
     reg scl_di = 0;
     reg sda_di = 0;
 
-    wire scl_ndo;
-    wire sda_ndo;
-    reg sda_ndo_reg = 0;
+    wire scl_pulldown;
+    wire sda_pulldown;
+    reg sda_pulldown_reg = 0;
 
     reg stall;
     wire [7:0] i2c_addr_rw;
@@ -136,8 +136,8 @@ module i2c_simple_slave_tb();
 
         .scl_di(scl_di),
         .sda_di(sda_di),
-        .scl_pulldown(scl_ndo),
-        .sda_pulldown(sda_ndo),
+        .scl_pulldown(scl_pulldown),
+        .sda_pulldown(sda_pulldown),
 
         .stall(stall),
         .i2c_addr_rw(i2c_addr_rw),

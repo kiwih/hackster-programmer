@@ -26,15 +26,12 @@ module i2c_simple_slave #(
     output reg i2c_error_stb
 );
 
-reg [7:0] i2c_addr_rw_reg;
-assign i2c_addr_rw = i2c_addr_rw_reg;
-
 reg scl_di_reg, sda_di_reg = 0;
 //reg scl_di_reg_prev, sda_di_reg_prev = 0;
 reg scl_rising_edge, scl_falling_edge;
 reg sda_rising_edge, sda_falling_edge;
 
-always@(posedge clk or negedge rst_n)
+always@(posedge clk )
 begin
     if(~rst_n)
     begin
@@ -58,11 +55,6 @@ begin
     end
 end
 
-// assign scl_rising_edge = (scl_di_reg == 1 && scl_di_reg_prev == 0);
-// assign scl_falling_edge = (scl_di_reg == 0 && scl_di_reg_prev == 1);
-// assign sda_rising_edge = (sda_di_reg == 1 && sda_di_reg_prev == 0);
-// assign sda_falling_edge = (sda_di_reg == 0 && sda_di_reg_prev == 1);
-
 reg i2c_rx_addr_r_w_save = 0;
 reg i2c_rx_data_save = 0;
 
@@ -71,7 +63,7 @@ reg i2c_buf_clr;
 reg i2c_buf_ld_tx;
 reg i2c_buf_rx_shift_en;
 reg i2c_buf_tx_shift_en;
-always@(posedge clk or negedge rst_n) begin
+always@(posedge clk) begin
     if(~rst_n || i2c_buf_clr) begin
         i2c_buf <= 8'h00;
     end else begin
@@ -84,10 +76,35 @@ always@(posedge clk or negedge rst_n) begin
     end
 end
 
+reg i2c_data_rx_ld;
+always @(posedge clk ) begin
+    i2c_data_rx_valid_stb <= 0;
+    if(~rst_n) 
+        i2c_data_rx <= 8'h00;
+    else if(i2c_data_rx_ld) begin
+        i2c_data_rx <= i2c_buf;
+        i2c_data_rx_valid_stb <= 1;
+    end
+end
+
+
+reg [7:0] i2c_addr_rw_reg;
+reg i2c_addr_rw_reg_ld;
+always@(posedge clk ) begin
+    i2c_addr_rw_valid_stb <= 0;
+    if(~rst_n) 
+        i2c_addr_rw_reg <= 8'h00;
+    else if(i2c_addr_rw_reg_ld) begin
+        i2c_addr_rw_reg <= i2c_buf;
+        i2c_addr_rw_valid_stb <= 1;
+    end
+end
+assign i2c_addr_rw = i2c_addr_rw_reg;
+
 reg [2:0] i2c_buf_cnt;
 reg i2c_buf_cnt_clr;
 reg i2c_buf_cnt_en;
-always@(posedge clk or negedge rst_n) begin
+always@(posedge clk ) begin
     if(~rst_n || i2c_buf_cnt_clr) begin
         i2c_buf_cnt <= 3'h0;
     end else begin
@@ -117,7 +134,7 @@ localparam  S_IDLE      = 4'h0,
 
 reg [3:0] state, next_state = S_IDLE;
 
-always@(posedge clk or negedge rst_n)
+always@(posedge clk )
 begin
     if(~rst_n)
         state <= S_IDLE;
@@ -144,12 +161,15 @@ always@* begin
     i2c_buf_cnt_en <= 0;
 
     i2c_addr_rw_valid_stb <= 0;
-    i2c_data_rx_valid_stb <= 0;
     i2c_data_tx_loaded_stb <= 0;
     i2c_data_tx_done_stb <= 0;
     i2c_error_stb <= 0;
 
+    i2c_addr_rw_reg_ld <= 0;
+    i2c_data_rx_ld <= 0;
     i2c_tx_en <= 0;
+
+    next_state <= S_ERROR;
 case(state)
     S_IDLE: begin //wait for SDA to go low while SCL stays high
         if(sda_falling_edge && scl_di_reg == 1)
@@ -172,13 +192,14 @@ case(state)
             i2c_buf_rx_shift_en <= 1;
             next_state <= S_ADDR_RX;
         end else if(scl_falling_edge == 1 && i2c_buf_cnt == 3'h7) begin
-            i2c_addr_rw_reg <= i2c_buf;
-            i2c_addr_rw_valid_stb <= 1;
+            i2c_addr_rw_reg_ld <= 1;
             next_state <= S_ADDR_ACK;
         end else if(scl_falling_edge == 1) begin
             i2c_buf_cnt_en <= 1;
             next_state <= S_ADDR_RX;
         end else if(i2c_buf_cnt != 3'h7) 
+            next_state <= S_ADDR_RX;
+        else
             next_state <= S_ADDR_RX;
     end
     S_ADDR_ACK: begin //send ACK
@@ -235,14 +256,16 @@ case(state)
             next_state <= S_DONE;
         else if(scl_rising_edge == 1) begin
             i2c_buf_rx_shift_en <= 1;
+            next_state <= S_DATA_RX;
         end else if(scl_falling_edge == 1 && i2c_buf_cnt == 3'h7) begin
-            i2c_data_rx <= i2c_buf;
-            i2c_data_rx_valid_stb <= 1;
+            i2c_data_rx_ld <= 1;
             next_state <= S_DATA_RX_ACK;
         end else if(scl_falling_edge) begin
             i2c_buf_cnt_en <= 1;
             next_state <= S_DATA_RX;
         end else if(i2c_buf_cnt != 3'h7) 
+            next_state <= S_DATA_RX;
+        else
             next_state <= S_DATA_RX;
     end
     
