@@ -23,8 +23,11 @@ module i2c_simple_slave #(
     output reg i2c_data_tx_loaded_stb,
     output reg i2c_data_tx_done_stb,
 
-    output reg i2c_error_stb
+    output reg i2c_error_stb,
+
+    output wire [3:0] debug_i2c_state
 );
+
 
 reg scl_di_reg, sda_di_reg = 0;
 //reg scl_di_reg_prev, sda_di_reg_prev = 0;
@@ -327,5 +330,8 @@ end
 assign scl_pulldown = 0 | i2c_clock_stretch;
 assign sda_pulldown = 0 | i2c_ack | (i2c_tx_en ? i2c_buf[7] : 0);
 
+
+
+assign debug_i2c_state = state;
 
 endmodule

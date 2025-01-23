@@ -7,7 +7,9 @@ module i2c_reg_and_pass(
     inout wire PERIPH_SDA, PERIPH_SCL,
 
     input wire PI_ICE_BTN,
-    output wire ICE_LED, RGB_R, RGB_G, RGB_B
+    output wire ICE_LED, RGB_R, RGB_G, RGB_B,
+
+    output wire [5:2] APP
 );
 
 localparam ice_i2c_address = 7'h42;
@@ -49,10 +51,11 @@ i2c_simple_slave #(
     //.i2c_addr_rw_valid_stb(?),
     .i2c_data_rx(i2c_rx),
     .i2c_data_rx_valid_stb(din_wr),
-    .i2c_data_tx(dout)
+    .i2c_data_tx(dout),
     //.i2c_data_tx_loaded_stb(?),
     //.i2c_data_tx_done_stb(?),
     //.i2c_error_stb(?)
+    .debug_i2c_state(APP[5:2])
 );
 
 assign ICE_LED = din[0];
