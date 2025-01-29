@@ -11,4 +11,4 @@ PCF_SOURCE = top.pcf
 SYNTH_TOP_MODULE = top
 SIM_TOP_MODULE = top
 
-include ../hackster.mk
+include ../../examples/hackster.mk

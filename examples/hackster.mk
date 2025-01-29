@@ -77,11 +77,11 @@ PROGRAMMER = $(DOCKER_UART) hackster-fpga
 ### Simulation targets ###
 
 # Target for compiling the Verilog source files
-compile_sim: $(SIM_SOURCES)
+$(SIM_OUT): $(SIM_SOURCES)
 	$(SIM) $(CFLAGS) -o $(SIM_OUT) -s $(SIM_TOP_MODULE) $(SIM_SOURCES)
 
 # Target for running the simulation
-simulate: compile_sim
+simulate: $(SIM_OUT)
 	$(VVP) $(SIM_OUT)
 
 # Target for viewing the waveform using GTKWave
@@ -103,11 +103,11 @@ $(PNR_OUT): $(SYNTH_OUT)
 	$(PNR) --force --json $(SYNTH_OUT) --pcf $(PCF_SOURCE) --asc $(PNR_OUT) --freq $(FREQUENCY) --up5k --package $(PACKAGE)
 
 # Target for timing analysis
-timing: $(PNR_OUT)
+$(TIMING_OUT): $(PNR_OUT)
 	$(TIMING) -p $(PCF_SOURCE) -P $(PACKAGE) -r $(TIMING_OUT) -d up5k -t $(PNR_OUT)
 
 # Target for generating the bitstream
-bitstream: $(PNR_OUT)
+$(BITSTREAM): $(PNR_OUT)
 	$(PACK) $(PNR_OUT) $(BITSTREAM)
 
 # Clean up the generated files
@@ -121,18 +121,19 @@ program: bitstream
 program_power: bitstream
 	$(PROGRAMMER) p $(BITSTREAM) $(FPGA_PORT)
 
-visualize: $(SYNTH_OUT)
-	$(SYNTH) -p "read_json $(SYNTH_OUT); show -format svg -viewer none -prefix $(SYNTH_OUT)"
+$(SYNTH_OUT).svg: $(SYNTH_SOURCES)
+	$(SYNTH) -p "read -sv $(SYNTH_SOURCES); hierarchy -top $(SYNTH_TOP_MODULE); proc; opt; show -format svg -viewer none -prefix $(SYNTH_OUT); write_json simple.$(SYNTH_OUT)"
+
 
 # ==============================================================================
 # Recipe area
 # ==============================================================================
 
 # Simulate and view
-run_sim: compile_sim simulate view
+run_sim: $(SIM_OUT) simulate view
 
 # Synthesize and generate the bitstream
-run_synth: timing bitstream
+run_synth: $(TIMING_OUT) $(BITSTREAM)
 
 # Programmer
 run_fpga: run_synth program
@@ -140,5 +141,8 @@ run_fpga: run_synth program
 # Programmer and power measurement
 run_fpga_power: run_synth program_power
 
+# visualization: 
+visualize: $(SYNTH_OUT).svg
+
 # Phony targets for make
-.PHONY: synth pnr timing bitstream run_sim run_synth run_fpga run_fpga_power
+.PHONY: timing bitstream run_sim run_synth run_fpga run_fpga_power visualize
