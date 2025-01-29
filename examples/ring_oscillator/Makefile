@@ -3,12 +3,12 @@
 # ==============================================================================
 
 # List of source files
-SYNTH_SOURCES = puf.v
+SYNTH_SOURCES = ring_oscillator.v
 SIM_SOURCES = $(SYNTH_SOURCES)
-PCF_SOURCE = puf.pcf
+PCF_SOURCE = ring_oscillator.pcf
 
 # Top-level module
-SYNTH_TOP_MODULE = puf
-SIM_TOP_MODULE = puf
+SYNTH_TOP_MODULE = ring_oscillator
+SIM_TOP_MODULE = ring_oscillator
 
 include ../hackster.mk

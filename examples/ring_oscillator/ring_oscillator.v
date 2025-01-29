@@ -1,6 +1,6 @@
 `default_nettype none
 
-module puf(
+module ring_oscillator(
     //input wire ICE_CLK,
     output reg ICE_LED //, RGB_R, RGB_G, RGB_B
 );
