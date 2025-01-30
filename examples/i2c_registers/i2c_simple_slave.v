@@ -1,3 +1,7 @@
+//Author: Hammond Pearce
+//Email: hammond.pearce@unsw.edu.au
+//Date: Jan 30 2025
+
 `default_nettype none
 
 module i2c_simple_slave #(
@@ -30,10 +34,11 @@ module i2c_simple_slave #(
 
 
 reg scl_di_reg, sda_di_reg = 0;
-//reg scl_di_reg_prev, sda_di_reg_prev = 0;
 reg scl_rising_edge, scl_falling_edge;
 reg sda_rising_edge, sda_falling_edge;
 
+//this block is for identifying rising and falling edges of SCL and SDA
+// (this is needed for start bits, stop bits, etc)
 always@(posedge clk )
 begin
     if(~rst_n)
@@ -61,6 +66,8 @@ end
 reg i2c_rx_addr_r_w_save = 0;
 reg i2c_rx_data_save = 0;
 
+//the shift register used for incoming and outgoing data bits 
+// in the I2C protocol
 reg [7:0] i2c_buf;
 reg i2c_buf_clr;
 reg i2c_buf_ld_tx;
@@ -79,6 +86,8 @@ always@(posedge clk) begin
     end
 end
 
+//this register preserves the contents of the shift register
+// after a data byte is received
 reg i2c_data_rx_ld;
 always @(posedge clk ) begin
     i2c_data_rx_valid_stb <= 0;
@@ -90,7 +99,8 @@ always @(posedge clk ) begin
     end
 end
 
-
+//this register preserves the contents of the shift register
+// after an address/r_w byte is received
 reg [7:0] i2c_addr_rw_reg;
 reg i2c_addr_rw_reg_ld;
 always@(posedge clk ) begin
@@ -104,6 +114,7 @@ always@(posedge clk ) begin
 end
 assign i2c_addr_rw = i2c_addr_rw_reg;
 
+//this counter is used to keep track of the number of bits shifted in/out
 reg [2:0] i2c_buf_cnt;
 reg i2c_buf_cnt_clr;
 reg i2c_buf_cnt_en;
@@ -150,7 +161,7 @@ reg i2c_ack = 0;
 reg i2c_clock_stretch = 0;
 
 reg i2c_tx_en = 0;
-//TODO: if clock stretching, this would occur prior to any slave-controlled ACK
+//Clock stretching should occur prior to any slave-controlled ACK
 // see https://vanhunteradams.com/Protocols/I2C/I2C.html clock stretch figure
 always@* begin
     i2c_clock_stretch <= 0;
@@ -207,7 +218,7 @@ case(state)
     end
     S_ADDR_ACK: begin //send ACK
         if(i2c_addr_rw_reg[7:1] != i2c_address) begin
-            $display("Address mismatch: %h != %h", i2c_addr_rw_reg[7:1], i2c_address);
+            //$display("Address mismatch: %h != %h", i2c_addr_rw_reg[7:1], i2c_address);
             next_state <= S_IGNORE;
         end else begin
             if(scl_falling_edge) 

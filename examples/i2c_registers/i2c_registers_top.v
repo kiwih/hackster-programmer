@@ -1,6 +1,6 @@
 `default_nettype none
 
-module i2c_reg_and_pass(
+module i2c_registers_top(
     input wire ICE_CLK,
     
     inout wire APP_SDA, APP_SCL,

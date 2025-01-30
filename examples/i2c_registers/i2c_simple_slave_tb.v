@@ -1,3 +1,7 @@
+//Author: Hammond Pearce
+//Email: hammond.pearce@unsw.edu.au
+//Date: Jan 30 2025
+
 `default_nettype none
 module i2c_simple_slave_tb();
 
