@@ -30,11 +30,13 @@ SIM_OUT = $(SIM_TOP_MODULE).vvp
 # GTKWave output file
 WAVE_OUT = waveform.vcd
 
+OUTPUTNAME_ROOT ?= $(SYNTH_TOP_MODULE)
+
 # Synthesis output files
-SYNTH_OUT = $(SYNTH_TOP_MODULE).json
-PNR_OUT = $(SYNTH_TOP_MODULE).asc
-TIMING_OUT = $(SYNTH_TOP_MODULE).timings
-BITSTREAM = $(SYNTH_TOP_MODULE).bin
+SYNTH_OUT = $(OUTPUTNAME_ROOT).json
+PNR_OUT = $(OUTPUTNAME_ROOT).asc
+TIMING_OUT = $(OUTPUTNAME_ROOT).timings
+BITSTREAM = $(OUTPUTNAME_ROOT).bin
 
 # ==============================================================================
 # Tools and scripts
@@ -96,7 +98,7 @@ $(WAVE_OUT): simulate
 
 # Target for synthesizing the design
 $(SYNTH_OUT): $(SYNTH_SOURCES)
-	$(SYNTH) -p "synth_ice40 -top $(SYNTH_TOP_MODULE) -json $(SYNTH_OUT)" $(SYNTH_SOURCES)
+	$(SYNTH) -p "verilog_defines $(SYNTH_DEFINES); read -vlog2k $(SYNTH_SOURCES); synth_ice40 -top $(SYNTH_TOP_MODULE) -json $(SYNTH_OUT); verilog_defines -list"
 
 # Target for place and route
 $(PNR_OUT): $(SYNTH_OUT)
@@ -113,6 +115,9 @@ $(BITSTREAM): $(PNR_OUT)
 # Clean up the generated files
 clean:
 	rm -f $(SIM_OUT) $(WAVE_OUT) $(SYNTH_OUT) $(PNR_OUT) $(TIMING_OUT) $(BITSTREAM)
+
+clean_all:
+	rm -f *.vvp *.vcd *.json *.asc *.timings *.bin
 
 ### Programming targets ###
 program: bitstream
