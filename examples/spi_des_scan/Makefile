@@ -7,6 +7,7 @@ SYNTH_SOURCES = spi_des_scan_top.v \
 				des_fixedkey_scanchain_fsm.v \
 				des_fixedkey_scanchain.v \
 				scan_register.v \
+				scan_shift_register.v \
 				des/des_e.v \
 				des/des_f.v \
 				des/des_ip_inv.v \

@@ -1,8 +1,11 @@
+`default_nettype none
+
 module des_fixedkey_scanchain_fsm(
     input wire clk,
     input wire rst_n,
     input wire start,
     output reg busy,
+    output wire done,
 
     output wire [3:0] round,
     output reg ld_output,
@@ -15,7 +18,7 @@ module des_fixedkey_scanchain_fsm(
 );
     
     reg count_rst, count_enable;
-    wire scan_count_out;
+    wire scan_count_out, scan_state_out;
 
    //scan register for round counter
     scan_register #(
@@ -48,7 +51,7 @@ module des_fixedkey_scanchain_fsm(
         .data_out(state),
         .scan_enable(scan_enable),
         .scan_in(scan_count_out),
-        .scan_out(scan_out)
+        .scan_out(scan_state_out)
     );
 
     always@(state,start,round) begin
@@ -58,37 +61,57 @@ module des_fixedkey_scanchain_fsm(
         sel_l_r <= 0;
         count_rst <= 0;
         count_enable <= 0;
-        case(state)
-            S_IDLE: begin
-                if(start) begin
-                    next_state = S_START;
-                end else begin
-                    next_state = S_IDLE;
+        if(scan_enable == 1) begin
+            next_state <= state;
+        end else begin
+            case(state)
+                S_IDLE: begin
+                    if(start) begin
+                        next_state = S_START;
+                    end else begin
+                        next_state = S_IDLE;
+                    end
                 end
-            end
-            S_START: begin
-                count_rst <= 1;
-                ld_l_r <= 1;
-                busy <= 1;
-                next_state = S_ROUND;
-            end
-            S_ROUND: begin
-                count_enable <= 1;
-                ld_l_r <= 1;
-                sel_l_r <= 1;
-                busy <= 1;
-                if(round == 14) begin //mealy machine == count will be 15 in S_LASTROUND
-                    next_state = S_LASTROUND;
-                end else begin
+                S_START: begin
+                    count_rst <= 1;
+                    ld_l_r <= 1;
+                    busy <= 1;
                     next_state = S_ROUND;
                 end
-            end
-            S_LASTROUND: begin
-                busy <= 1;
-                ld_output <= 1;
-                next_state = S_IDLE;
-            end
-        endcase
+                S_ROUND: begin
+                    count_enable <= 1;
+                    ld_l_r <= 1;
+                    sel_l_r <= 1;
+                    busy <= 1;
+                    if(round == 14) begin //mealy machine == count will be 15 in S_LASTROUND
+                        next_state = S_LASTROUND;
+                    end else begin
+                        next_state = S_ROUND;
+                    end
+                end
+                S_LASTROUND: begin
+                    busy <= 1;
+                    ld_output <= 1;
+                    next_state = S_IDLE;
+                end
+            endcase
+        end
     end
+
+    wire [1:0] last_busy_reg;
+    assign done = last_busy_reg[0] & ~busy;
+
+    scan_register #(
+        .WIDTH(2)
+    ) padding_and_busy_reg (
+        .clk(clk),
+        .rst(~rst_n),
+        .enable(1'b1),
+        .data_in({1'b0, busy}),
+        .data_out(last_busy_reg),
+        .scan_enable(scan_enable),
+        .scan_in(scan_state_out),
+        .scan_out(scan_out)
+    );
 
 endmodule

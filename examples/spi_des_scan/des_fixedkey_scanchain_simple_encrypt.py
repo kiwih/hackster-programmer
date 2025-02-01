@@ -33,7 +33,10 @@ def main():
     SCK.value(0)
 
     # engage the input SPI
-    txdata = bytearray([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04])
+    plaintext = bytearray([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04])
+    ciphertext = bytearray([0x45, 0x4c, 0xf2, 0x6d, 0xb6, 0xca, 0x57, 0x1a])
+    
+    txdata = plaintext
     rxdata = bytearray(8)
     NORM_CS_N.value(0)
     spi.write(txdata)
@@ -49,7 +52,7 @@ def main():
     else:
         print("Error: SPI error")
         return
-    
+       
     START.value(1)
     SCK.value(1)
     SCK.value(0)
@@ -85,6 +88,45 @@ def main():
     for i in range(18):
         SCK.value(1)
         SCK.value(0)
+          
+    if(BUSY.value() == 0):
+        print("DES successfully finished")
+    else:
+        print("Error: DES did not finish")
+        return
+    
+    #do the readout
+    NORM_CS_N.value(0)
+    spi.write_readinto(txdata, rxdata)
+    NORM_CS_N.value(1)
+    if rxdata != ciphertext:
+        print("Encryption failed, got", binascii.hexlify(rxdata), "expected", binascii.hexlify(ciphertext))
+    else:
+        print("Encryption value correct:", binascii.hexlify(rxdata))
+    
+    #now do decryption
+    ENCRYPT_NDECRYPT.value(0)
+    txdata = ciphertext
+    rxdata = bytearray(8)
+    NORM_CS_N.value(0)
+    spi.write(txdata)
+    NORM_CS_N.value(1)
+    
+    START.value(1)
+    SCK.value(1)
+    SCK.value(0)
+    START.value(0)
+    
+    if(BUSY.value() == 1):
+        print("DES successfully busy")
+    else:
+        print("Error: DES did not go busy")
+        return
+    
+    for i in range(18):
+        SCK.value(1)
+        SCK.value(0)
+        
         
     if(BUSY.value() == 0):
         print("DES successfully finished")
@@ -96,8 +138,12 @@ def main():
     NORM_CS_N.value(0)
     spi.write_readinto(txdata, rxdata)
     NORM_CS_N.value(1)
-    print(binascii.hexlify(rxdata))
-    
+    if rxdata != plaintext:
+        print("Decryption failed, got", binascii.hexlify(rxdata), "expected", binascii.hexlify(plaintext))
+    else:
+        print("Decryption value correct:", binascii.hexlify(rxdata))
+
 main()
     
+
 

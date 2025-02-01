@@ -11,6 +11,7 @@ module des_fixedkey_scanchain #(
     input wire start,
     input wire encrypt_ndecrypt, // 0: decrypt, 1: encrypt
     output wire busy,
+    output wire done,
 
     input wire scan_enable,
     input wire scan_in,
@@ -28,6 +29,7 @@ module des_fixedkey_scanchain #(
         .rst_n(rst_n),
         .start(start),
         .busy(busy),
+        .done(done),
         .round(round),
         .ld_output(ld_output),
         .ld_l_r(ld_l_r),

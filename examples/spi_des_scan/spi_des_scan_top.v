@@ -18,26 +18,31 @@ module spi_des_scan_top(
     wire [63:0] text_out;
     reg last_busy;
 
-    wire spi_out, des_scan_out;
+    wire spi_out, des_scan_out, spi_scan_out;
 
     wire busy;
-    always @(posedge SCK) last_busy = busy;
-    wire busy_falling_edge = last_busy & ~busy;
+    wire done;
 
     assign ICE_LED = busy;
     assign BUSY = busy;
 
-    scan_register #(
+    scan_shift_register #(
         .WIDTH(64)
     ) text_reg (
         .clk(SCK),
         .rst(~RST_N),
-        .enable(busy_falling_edge),
+
+        .shift_enable(~NORM_CS_N),
+        .shift_in(MOSI),
+        .shift_out(spi_out),
+
+        .data_enable(done),
         .data_in(text_out),
         .data_out(text),
-        .scan_enable(~NORM_CS_N),
+
+        .scan_enable(~SCAN_CS_N),
         .scan_in(MOSI),
-        .scan_out(spi_out)
+        .scan_out(spi_scan_out)
     );
 
     des_fixedkey_scanchain #(
@@ -50,8 +55,9 @@ module spi_des_scan_top(
         .start(START),
         .encrypt_ndecrypt(ENCRYPT_NDECRYPT),
         .busy(busy),
+        .done(done),
         .scan_enable(~SCAN_CS_N),
-        .scan_in(MOSI),
+        .scan_in(spi_scan_out),
         .scan_out(des_scan_out)
     );
 
