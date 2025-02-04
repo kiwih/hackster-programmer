@@ -1,0 +1,29 @@
+# -----------------------------------------------------------------------------
+#- basic hackster constraint file (.pcf)
+#- By Hammond Pearce
+#- August 2024
+#- MIT license
+# -----------------------------------------------------------------------------
+
+# -------------------------- SYSTEM CLOCK ------------------------------------
+set_io SCK 36 #Pin D0 - this is the clock but it's not on a normal clock pin
+set_frequency ICE_CLK 1 #running at 1MHz is very unlikely but we'll put it in as the max
+
+# ------------ LED ------------------------------------------------------
+set_io ICE_LED 38
+
+# ------------ APP_ICE40 comms --------------------------------------------
+set_io BUSY 23      #D8
+set_io ENCRYPT_NDECRYPT 25 #D7
+set_io START 27     #D6
+set_io SCAN_CS_N 26 #D5
+set_io NORM_CS_N 28 #D4 
+set_io MISO 31      #D3 
+set_io MOSI 32      #D2 
+set_io RST_N 34     #D1  
+
+
+
+
+
+
