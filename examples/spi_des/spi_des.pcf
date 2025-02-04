@@ -7,7 +7,7 @@
 
 # -------------------------- SYSTEM CLOCK ------------------------------------
 set_io SCK 36 #Pin D0 - this is the clock but it's not on a normal clock pin
-set_frequency ICE_CLK 1 #running at 1MHz is very unlikely but we'll put it in as the max
+set_frequency SCK 1 #running at 1MHz is very unlikely but we'll put it in as the max
 
 # ------------ LED ------------------------------------------------------
 set_io ICE_LED 38
