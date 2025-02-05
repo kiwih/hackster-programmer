@@ -57,7 +57,7 @@ module spi_aes_top(
         .rst_n      (RST_N),
         .load_i     (START),
         .data_i     (text),
-        .dec_i      (ENCRYPT_NDECRYPT),
+        .dec_i      (~ENCRYPT_NDECRYPT),
         .data_o     (text_out),
         .busy_o     (busy)
     );
