@@ -270,9 +270,6 @@ begin : sbox_update
 	if(dec)
 	begin : decrypt_bot
 		
-		
-		
-
 		S0 = P13 ^ P22;
 		S1 = P26 ^ P29;
 		S2 = P17 ^ P28;
@@ -284,9 +281,6 @@ begin : sbox_update
 	end
 	else // !dec
 	begin : encrypt_bot
-		
-					 
-		
 
 		S0 = L6 ^ L24; /* S0 = L6 + L24 */
 		S1 = ~(L16 ^ L26); /* S1 = L16 # L26 */
