@@ -50,13 +50,14 @@ module spi_aes_top(
 
     reg resetn = 1'b1;
 
-    aes_core AESGoogleVault(
+    aes_core_static_128 #(
+        .KEY(128'h2b7e151628aed2a6abf7976676151301)   
+    )aes (
         .clk        (SCK),
+        .rst_n      (RST_N),
         .load_i     (START),
-        .key_i      ({aes_key_in, 128'h0}),
         .data_i     (text),
-        .size_i     (2'd0), //AES-128
-        .dec_i      (1'b0),
+        .dec_i      (ENCRYPT_NDECRYPT),
         .data_o     (text_out),
         .busy_o     (busy)
     );
