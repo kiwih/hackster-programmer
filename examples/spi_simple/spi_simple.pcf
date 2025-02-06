@@ -15,6 +15,9 @@ set_io RGB_R 39
 set_io RGB_G 40
 set_io RGB_B 41
 
+# ------------ BTN ------------------------------------------------------
+set_io PI_ICE_BTN 6
+
 # ------------ APP_ICE40 comms --------------------------------------------
 set_io NORM_CS_N 28 #D4 
 set_io MISO 31      #D3 

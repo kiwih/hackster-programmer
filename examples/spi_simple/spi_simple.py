@@ -1,4 +1,5 @@
 import machine
+import time
 
 ice_done = machine.Pin(3, machine.Pin.IN)
 
@@ -22,18 +23,21 @@ RST_N.value(1)
 SCK.value(1)
 SCK.value(0)
 
-# engage the input SPI
-txdata = bytearray([0x08])
-rxdata = bytearray(1)
+while True:
+    # engage the input SPI
+    txdata = bytearray([0x08])
+    rxdata = bytearray(1)
 
-NORM_CS_N.value(0)
-spi.write(txdata)
-NORM_CS_N.value(1)
+    #do a test readout
+    NORM_CS_N.value(0)
+    spi.write_readinto(txdata, rxdata)
+    NORM_CS_N.value(1)
+    
+    time.sleep(0.0001) #put a very short delay to make it visible on the scope
+    SCK.value(1) #run one clock cycle with NORM_CS_N set high to update the capture reg
+    SCK.value(0)
+    
+    print(rxdata)
+    time.sleep(0.1)
 
-#do a test readout
-NORM_CS_N.value(0)
-spi.write_readinto(txdata, rxdata)
-NORM_CS_N.value(1)
-
-print(rxdata)
 

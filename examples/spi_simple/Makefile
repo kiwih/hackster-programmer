@@ -3,7 +3,7 @@
 # ==============================================================================
 
 # List of source files
-SYNTH_SOURCES = spi_simple_top.v scan_register.v
+SYNTH_SOURCES = spi_simple_top.v shift_register.v
 
 SIM_SOURCES = $(SYNTH_SOURCES) 
 PCF_SOURCE = spi_simple.pcf
