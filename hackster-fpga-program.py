@@ -49,14 +49,28 @@ class HacksterFPGAProgrammer:
         if launch_ack != b'#':
             raise Exception("Failed to start FPGA in power meas mode (no ack)")
         # read 1024 bytes of power data and save it to a text file one byte per line
-        power_data = self.uart.read(1024*4)
+        #delete the file if it exists
         try:
             with open(power_file, "w") as f:
-                for i in range(1024*4):
-                    f.write(str(power_data[i]) + "\n")
+                f.write("")
         except Exception as e:
             print(e)
-            raise Exception("Failed to save power data to file")
+            raise Exception("Failed to open power data file")
+        
+        #disable timeout
+        self.uart.timeout = None
+
+        #read 1024 bytes 4 times
+        for i in range(4):
+            power_data = self.uart.read(1024)
+            try:
+                with open(power_file, "a") as f:
+                    print("Got %d bytes of power data" % len(power_data))
+                    for i in range(len(power_data)):
+                        f.write(str(power_data[i]) + "\n")
+            except Exception as e:
+                print(e)
+                raise Exception("Failed to save power data to file")
         
         
     def __del__(self):
