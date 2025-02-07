@@ -20,9 +20,9 @@ set_io APP[4] 28
 set_io APP[3] 31
 set_io APP[2] 32
 
-# ------------ RP2040 I2C1
-set_io APP_SDA 36
-set_io APP_SCL 34
+# ------------ GLOBAL (controller) I2C
+set_io GLOBAL_SDA 18
+set_io GLOBAL_SCL 19
 
 # ------------ PERIPH I2C1
 # use SDA=11, SCL=10 for cryptomem, SDA=4, SCL=3 for IMU/EEPROM

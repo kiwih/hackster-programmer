@@ -14,9 +14,9 @@ set_io RGB_B 41
 # ------------ BTN ------------------------------------------------------
 set_io PI_ICE_BTN 6
 
-# ------------ RP2040 I2C1
-set_io rp2040_sda 36
-set_io rp2040_scl 34
+# ------------ GLOBAL (controller) I2C
+set_io global_sda 18
+set_io global_scl 19
 
 # ------------ PERIPH I2C1
 # use SDA=11, SCL=10 for cryptomem, SDA=4, SCL=3 for IMU/EEPROM

@@ -3,7 +3,7 @@
 module i2c_registers_top(
     input wire ICE_CLK,
     
-    inout wire APP_SDA, APP_SCL,
+    inout wire GLOBAL_SDA, GLOBAL_SCL,
     inout wire PERIPH_SDA, PERIPH_SCL,
 
     input wire PI_ICE_BTN,
@@ -18,8 +18,8 @@ wire app_sda_di, app_scl_di, app_sda_pulldown, app_scl_pulldown;
 
 i2c_pin_primitives_ice40 APP_I2C(
     .ICE_CLK(ICE_CLK),
-    .SDA(APP_SDA),
-    .SCL(APP_SCL),
+    .SDA(GLOBAL_SDA),
+    .SCL(GLOBAL_SCL),
     .SDA_DIN(app_sda_di),
     .SCL_DIN(app_scl_di),
     .SDA_PULLDOWN(app_sda_pulldown),
