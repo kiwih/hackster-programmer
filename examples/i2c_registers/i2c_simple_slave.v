@@ -247,7 +247,7 @@ case(state)
         if(sda_falling_edge == 1 && scl_di_reg == 1) begin
             //restart condition
             next_state <= S_START;
-        end else if(sda_falling_edge == 1 && scl_di_reg == 0) begin
+        end else if(sda_di_reg == 0 && scl_di_reg == 0) begin
             if(i2c_addr_rw_reg[0] == 0) begin
                 i2c_buf_clr <= 1;
                 i2c_buf_cnt_clr <= 1;
@@ -263,7 +263,11 @@ case(state)
     end
 
     S_DATA_RX: begin
-        if(sda_rising_edge == 1 && scl_di_reg == 1 && i2c_buf_cnt <= 1) 
+        //(it is however possible to have a re-start)
+        if(sda_falling_edge == 1 && scl_di_reg == 1) begin
+            //restart condition
+            next_state <= S_START;
+        end else if(sda_rising_edge == 1 && scl_di_reg == 1 && i2c_buf_cnt <= 1) 
             //due to the way the counter would be incremented if this wasn't
             // a stop bit, we check for <= 1 rather than 0 as counter is 1 ahead
             //we're done here

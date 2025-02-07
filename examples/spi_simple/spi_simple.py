@@ -24,11 +24,10 @@ SCK.value(1)
 SCK.value(0)
 
 while True:
-    # engage the input SPI
     txdata = bytearray([0x08])
     rxdata = bytearray(1)
 
-    #do a test readout
+    # engage the input SPI and exchange bytes
     NORM_CS_N.value(0)
     spi.write_readinto(txdata, rxdata)
     NORM_CS_N.value(1)
