@@ -67,7 +67,7 @@ RUN git clone https://github.com/YosysHQ/icestorm.git /usr/src/icestorm \
     && cd /
 
 # Install nextpnr
-RUN git clone --recursive https://github.com/YosysHQ/nextpnr.git /usr/src/nextpnr \
+RUN git clone --recursive --branch nextpnr-0.7 https://github.com/YosysHQ/nextpnr.git /usr/src/nextpnr \
     && cd /usr/src/nextpnr \
     && cmake -DARCH=ice40 -DCMAKE_INSTALL_PREFIX=/usr/local . \
     && make -j$(nproc) \
