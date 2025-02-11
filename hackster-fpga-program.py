@@ -42,7 +42,7 @@ class HacksterFPGAProgrammer:
         if launch_ack != b'#':
             raise Exception("Failed to start FPGA (no ack)")
         
-    def startFPGAAndMeasurePower(self, power_file):
+    def startFPGAAndMeasurePower(self, power_file, num_capture_blocks=4):
         self.uart.write(b'w')
         # Read the 1 byte ack (should be '#')
         launch_ack = self.uart.read(1)
@@ -61,7 +61,7 @@ class HacksterFPGAProgrammer:
         self.uart.timeout = None
 
         #read 1024 bytes 4 times
-        for i in range(4):
+        for i in range(num_capture_blocks):
             power_data = self.uart.read(1024)
             try:
                 with open(power_file, "a") as f:
@@ -263,7 +263,7 @@ def start_fpga(uart_name):
     #quit
     del hackster_prog
 
-def start_fpga_and_measure_power(uart_name, power_file):
+def start_fpga_and_measure_power(uart_name, power_file, num_capture_blocks=4):
     try:
         hackster_prog = HacksterFPGAProgrammer(uart_name, 115200)
     except Exception as e:
@@ -272,7 +272,7 @@ def start_fpga_and_measure_power(uart_name, power_file):
     print("Starting the FPGA and measuring power.")
 
     #start the FPGA
-    hackster_prog.startFPGAAndMeasurePower(power_file)
+    hackster_prog.startFPGAAndMeasurePower(power_file, num_capture_blocks)
 
     #quit
     del hackster_prog
@@ -309,7 +309,7 @@ if __name__ == "__main__":
     #get the bin file name from argument 
     import sys
     if len(sys.argv) < 4:
-        print("Usage: {} <r|w> <bin_file> <uart> [power_file]".format(sys.argv[0]))
+        print("Usage: {} <r|w> <bin_file> <uart> [power_file [power_capture_blocks=4]]".format(sys.argv[0]))
         exit(1)
     read_write = sys.argv[1]
     bin_file = sys.argv[2]
@@ -318,6 +318,11 @@ if __name__ == "__main__":
         power_file = sys.argv[4]
     else:
         power_file = "power_data.txt"
+    
+    if len(sys.argv) == 6:
+        num_capture_blocks = int(sys.argv[5])
+    else:
+        num_capture_blocks = 4
 
     if read_write == 'w':
         reset_fpga_programmer(uart_name)
@@ -326,7 +331,7 @@ if __name__ == "__main__":
     elif read_write == 'p':
         reset_fpga_programmer(uart_name)
         write_bin_to_fpga(bin_file, uart_name)
-        start_fpga_and_measure_power(uart_name, power_file)
+        start_fpga_and_measure_power(uart_name, power_file, num_capture_blocks)
     elif read_write == 'r':
         reset_fpga_programmer(uart_name)
         read_bin_from_fpga(bin_file, uart_name)

@@ -39,17 +39,18 @@ RUN apt-get update && apt-get install -y \
     libftdi1-2 libftdi1-dev libhidapi-libusb0 libhidapi-dev \
     libudev-dev g++ \
     iverilog verilator \
+    openocd \
     && pip install pyserial
 
 # Install openocd
-ARG OPENOCD_VERSION=v0.12.0
-RUN git clone https://github.com/openocd-org/openocd.git /usr/src/openocd \
-    && cd /usr/src/openocd \
-    && git checkout v0.12.0 \
-    && ./bootstrap \
-    && ./configure --enable-cmsis-dap --enable-cmsis-dap-v2 --enable-stlink --disable-dependency-tracking \
-    && make -j$(nproc) && make install \
-    && cd /
+# ARG OPENOCD_VERSION=v0.12.0
+# RUN git clone https://github.com/openocd-org/openocd.git /usr/src/openocd \
+#     && cd /usr/src/openocd \
+#     && git checkout v0.12.0 \
+#     && ./bootstrap \
+#     && ./configure --enable-cmsis-dap --enable-cmsis-dap-v2 --enable-stlink --disable-dependency-tracking \
+#     && make -j$(nproc) && make install \
+#     && cd /
 
 # Install yosys
 RUN git clone https://github.com/YosysHQ/yosys.git /usr/src/yosys \
