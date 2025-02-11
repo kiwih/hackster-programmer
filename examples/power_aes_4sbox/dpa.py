@@ -27,7 +27,7 @@ def load_power_data():
             power = int(line)
             if power == 0:
                 sync_count += 1
-                if sync_count == 4:
+                if sync_count == 2:
                     sync_count = 0
                     if done_first_sync:
                         traces.append(trace)
@@ -136,19 +136,24 @@ def dpa_analysis(traces, plaintexts):
         # (there are 4 sboxes in use)
         sbox_in = (plaintext & 0xFF) ^ 0xDE 
         sbox_out = aes_sbox(sbox_in, True)
+        #print("Sbox in: %02X, Sbox out: %02X" % (sbox_in, sbox_out))
+        #return
         #look at least significant bit of sbox_out, if it is 0, add the trace to traces 0, otherwise put it in traces 1
-        if sbox_out & 1 == 0:
-            for j in range(4):
-                if traces[i][2+j] not in traces_0:
-                    traces_0[traces[i][2+j]] = 1
-                else:
-                    traces_0[traces[i][2+j]] += 1
+        target_average = 0
+        for j in range(3):
+            target_average += traces[i][j+1]
+        target_average /= 3
+        
+        if sbox_out & (1 << 0) == 0:
+            if target_average not in traces_0:
+                traces_0[target_average] = 1
+            else:
+                traces_0[target_average] += 1
         else:
-            for j in range(4):
-                if traces[i][2+j] not in traces_1:
-                    traces_1[traces[i][2+j]] = 1
-                else:
-                    traces_1[traces[i][2+j]] += 1
+            if target_average not in traces_1:
+                traces_1[target_average] = 1
+            else:
+                traces_1[target_average] += 1
 
     #sort the traces by numerical key value
     traces_0 = sorted(traces_0.items(), key=lambda x: x[0])
@@ -157,10 +162,10 @@ def dpa_analysis(traces, plaintexts):
     #print the traces
     print("Traces 0:")
     for k, v in traces_0:
-        print("  Trace %d: %d" % (k, v))
+        print("  Trace %f: %d" % (k, v))
     print("Traces 1:")
     for k, v in traces_1:
-        print("  Trace %d: %d" % (k, v))
+        print("  Trace %f: %d" % (k, v))
 
     #plot the distributions of the traces
     # line graph, with x axis being the different power measurements (keys of the dictionary)
@@ -173,7 +178,7 @@ def dpa_analysis(traces, plaintexts):
 
     return
     """
-
+    
 
 
 
@@ -231,16 +236,16 @@ def dpa_analysis(traces, plaintexts):
             sbox_byte = plaintexts[i] & 0xFF
             sbox_out = aes_sbox(sbox_byte ^ proposed_key_byte, True)
             #look at least significant bit of sbox_out, if it is 0, add the trace to bucket 0, otherwise put it in bucket 1
-            if sbox_out & (1 << 1) == 0:
+            if sbox_out & (1 << 0) == 0:
                 #add elements of trace[i][4:8] to bucket 0
                 bucket_0_cnt += 1
-                for j in range(4):
-                    bucket_0[j] += traces[i][2+j]
+                for j in range(3):
+                    bucket_0[j] += traces[i][j+1]
             else:
                 #add elements of trace[i][4:8] to bucket 1
                 bucket_1_cnt += 1
-                for j in range(4):
-                    bucket_1[j] += traces[i][2+j]
+                for j in range(3):
+                    bucket_1[j] += traces[i][j+1]
 
 
         # #plot the distributions of the buckets
@@ -250,13 +255,17 @@ def dpa_analysis(traces, plaintexts):
         #1. Get average power consumption for each bucket across all elements (i.e. trace[i][0] for all i)
         bucket_0_avg = [x / bucket_0_cnt for x in bucket_0]
         bucket_1_avg = [x / bucket_1_cnt for x in bucket_1]
+
+        #average the contents of each bucket into a single value
+        bucket_0_avg = sum(bucket_0_avg) / len(bucket_0_avg)
+        bucket_1_avg = sum(bucket_1_avg) / len(bucket_1_avg)
         
-        bucket_diff = [bucket_0_avg[i] - bucket_1_avg[i] for i in range(len(bucket_0_avg))]
+        bucket_diff = bucket_0_avg - bucket_1_avg
+        #[bucket_0_avg[i] - bucket_1_avg[i] for i in range(len(bucket_0_avg))]
 
-        #make the differences positive
-        bucket_diff = [abs(x) for x in bucket_diff]
+        #get the average 
 
-        differences[proposed_key_byte] = max(bucket_diff)
+        differences[proposed_key_byte] = abs(bucket_diff)
         print("Key byte %02X: %f" % (proposed_key_byte, differences[proposed_key_byte]))
         
        
@@ -281,8 +290,8 @@ def dpa_analysis(traces, plaintexts):
 
 
 def main():
-    raw_traces = load_power_data()
-    traces = differentiate_power_data(raw_traces)
+    traces = load_power_data()
+    #traces = differentiate_power_data(raw_traces)
     print("Loaded %d traces" % len(traces))
     
     #make sure all traces have the same length

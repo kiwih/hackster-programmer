@@ -14,6 +14,9 @@ set_io RGB_B 41
 # ------------ BTN ------------------------------------------------------
 set_io PI_ICE_BTN 6
 
+# ---
+set_io DUMMYO 45
+
 # -------------------------- SYSTEM CLOCK ------------------------------------
 set_io ICE_CLK 37
 set_frequency ICE_CLK 10

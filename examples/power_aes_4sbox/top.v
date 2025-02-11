@@ -2,7 +2,8 @@
 
 module top(
     input wire ICE_CLK,
-    output wire ICE_LED, RGB_R, RGB_G, RGB_B
+    output wire ICE_LED, RGB_R, RGB_G, RGB_B,
+    output wire DUMMYO
 );
 
 
@@ -80,11 +81,11 @@ always @(counter) begin
     case(counter)
         4'd11: lfsr_shift_en <= 1'b1; // advance LFSR
         4'd12: begin
-            text_in_sel <= 1'b0; // set text_in to text_out
+            text_in_sel <= 1'b0; // set text_in to lfsr_reg
             text_reg_en <= 1'b1; // enable text_reg
         end
         4'd13: begin
-            text_in_sel <= 1'b1; // set text_in to lfsr_reg
+            text_in_sel <= 1'b1; // set text_in to text_out
             text_reg_en <= 1'b1; // enable text_reg
         end
         4'd14: begin
@@ -92,13 +93,32 @@ always @(counter) begin
             text_reg_en <= 1'b1; // enable text_reg
         end
         4'd15: begin
-            text_in_sel <= 1'b1; // set text_in to lfsr_reg
+            text_in_sel <= 1'b1; // set text_in to text_out
             text_reg_en <= 1'b1; // enable text_reg
         end
     endcase
 end
 
 assign ICE_LED = counter > 4'd11; // LED on when counter > 3
+
+// //instantiate 63 NOT gates (as raw LUTs)
+// wire [63:0] lut_ins, lut_outs;
+// (* keep *)
+// SB_LUT4 #(
+//     .LUT_INIT(16'h0001)
+// ) luts [63:0] (
+//     .I0(lut_ins),
+//     .I1(1'b0),
+//     .I2(1'b0),
+//     .I3(1'b0),
+//     .O(lut_outs)
+// );
+
+// //wire all the NOT gates in a sequency
+// assign lut_ins = {lut_outs[62:0], text_reg[0]};
+
+
+assign DUMMYO = text_reg[0];
 
 //take the logical OR of all the output and assign it to RGB_R
 //assign RGB_R = |text_reg[31:0];
