@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y \
     libudev-dev g++ \
     iverilog verilator \
     openocd \
-    && pip install pyserial
+    python3-serial
 
 # Install openocd
 # ARG OPENOCD_VERSION=v0.12.0
@@ -70,7 +70,8 @@ RUN git clone https://github.com/YosysHQ/icestorm.git /usr/src/icestorm \
 # Install nextpnr
 RUN git clone --recursive https://github.com/YosysHQ/nextpnr.git /usr/src/nextpnr \
     && cd /usr/src/nextpnr \
-    && cmake -DARCH=ice40 -DCMAKE_INSTALL_PREFIX=/usr/local . \
+    && mkdir -p build && cd build \
+    && cmake .. -DARCH=ice40 -DCMAKE_INSTALL_PREFIX=/usr/local \
     && make -j$(nproc) \
     && make install \
     && cd /

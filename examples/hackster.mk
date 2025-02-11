@@ -70,7 +70,9 @@ PACK = $(DOCKER) icepack
 
 ##### Programming tools/settings ####
 # Specify the programmer
-PROGRAMMER = $(DOCKER_UART) hackster-fpga
+PROGRAMMER_COMMAND ?= hackster-fpga
+PROGRAMMER = $(DOCKER_UART) $(PROGRAMMER_COMMAND)
+NUM_CAPTURE_POWER_BLOCKS ?= 4
 
 # ==============================================================================
 # Targets 
@@ -124,7 +126,7 @@ program: bitstream
 	$(PROGRAMMER) w $(BITSTREAM) $(FPGA_PORT) 
 
 program_power: bitstream
-	$(PROGRAMMER) p $(BITSTREAM) $(FPGA_PORT)
+	$(PROGRAMMER) p $(BITSTREAM) $(FPGA_PORT) power_data.txt $(NUM_CAPTURE_POWER_BLOCKS)
 
 $(SYNTH_OUT).svg: $(SYNTH_SOURCES)
 	$(SYNTH) -p "read -sv $(SYNTH_SOURCES); hierarchy -top $(SYNTH_TOP_MODULE); proc; opt; show -format svg -viewer none -prefix $(SYNTH_OUT); write_json simple.$(SYNTH_OUT)"

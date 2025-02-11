@@ -6,22 +6,39 @@ module top(
     output wire ICE_LED, RGB_R, RGB_G, RGB_B
 );
 
-reg aes_start;
-wire aes_busy;
-
-reg [127:0] aes_key_in = 128'h00112233445566778899aabbccddeeff;
-reg [127:0] aes_text_in = 128'h00112233445566778899aabbccddeeff;
-wire [127:0] aes_text_out;
-wire [127:0] aes_r10_key;
 
 reg resetn = 1'b1;
 
-aes_core AESGoogleVault(
+reg aes_start;
+wire aes_busy;
+
+//32 bit LFSR
+reg [31:0] lfsr_reg = 32'hACE1ACE1;
+//put taps at 32, 22, 2, 1
+wire lfsr_out;
+assign lfsr_out = lfsr_reg[31] ^ lfsr_reg[21] ^ lfsr_reg[1] ^ lfsr_reg[0];
+reg lfsr_shift_en;
+always @(posedge ICE_CLK) begin
+    if(resetn == 1'b0) begin
+        lfsr_reg <= 32'hACE1ACE1;
+    end else if(lfsr_shift_en == 1'b1) begin
+        lfsr_reg <= {lfsr_reg[30:0], lfsr_out};
+    end
+end
+
+
+reg [127:0] aes_text_in = {lfsr_reg, lfsr_reg, lfsr_reg, lfsr_reg}; //4 repetitions of the LFSR
+wire [127:0] aes_text_out;
+wire [127:0] aes_r10_key;
+
+
+aes_core_static_128 #(
+    .KEY(128'h00112233445566778899aabbccddeeff)
+) aes_core (
     .clk        (ICE_CLK),
+    .rst_n      (resetn),
     .load_i     (aes_start),
-    .key_i      ({aes_key_in, 128'h0}),
     .data_i     (aes_text_in),
-    .size_i     (2'd0), //AES-128
     .dec_i      (1'b0),
     .data_o     (aes_text_out),
     .busy_o     (aes_busy)
@@ -41,21 +58,20 @@ reg [7:0] counter = 0;
 
 always @(posedge ICE_CLK) begin
     aes_start <= 1'b0;
-    if(aes_busy == 1'b0) begin
-        if(counter == 8'hFF) begin
+    lfsr_shift_en <= 1'b0;
+    if(aes_busy == 1'b1) begin
+        counter <= 0;
+    end else if(aes_busy == 1'b0) begin
+        counter <= counter + 1;
+        if(counter == 8'hFE) begin 
+            lfsr_shift_en <= 1'b1;
+        end else if(counter == 8'hFF) begin
             counter <= 0;
-            aes_text_in <= aes_text_in + 128'h1;
             aes_start <= 1'b1;
-        end else begin
-            counter <= counter + 1;
-        end
+        end 
     end
 end
 
-reg [18:0] counter2 = 0;
-always @(posedge ICE_CLK) begin
-    counter2 <= counter2 + 1;
-end
 assign ICE_LED = aes_busy;
 
 //take the logical OR of all the output aes_text_out and assign it to RGB_R
