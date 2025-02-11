@@ -45,6 +45,18 @@ def load_power_data():
         
         return traces
 
+def differentiate_power_data(traces):
+    #differentiate the power traces
+    #this is done by subtracting the previous power measurement from the current one
+    #the first power measurement is discarded
+    differentiated = []
+    for trace in traces:
+        diff = []
+        for i in range(1, len(trace)):
+            diff.append((trace[i] - trace[i-1])*2)
+        differentiated.append(diff)
+    return differentiated
+
 """
 Test values: ACE1ACE1, 59C359C3, B386B386, 670D670C
 """
@@ -114,43 +126,94 @@ def dpa_analysis(traces, plaintexts):
         #format: Trace <trace number>: <trace plaintext in hex> - <trace values in decimal>
         print("Trace %d: %08X - %s" % (i, plaintexts[i], " ".join(str(x) for x in traces[i])))
 
+    """
+    traces_0 = {}
+    traces_1 = {}   
+
+    for i in range(len(traces)):
+        plaintext = plaintexts[i]
+        #get the sbox output, bearing in mind that the sbox is applied to the plaintext XORed with the key
+        # (there are 4 sboxes in use)
+        sbox_in = (plaintext & 0xFF) ^ 0xDE 
+        sbox_out = aes_sbox(sbox_in, True)
+        #look at least significant bit of sbox_out, if it is 0, add the trace to traces 0, otherwise put it in traces 1
+        if sbox_out & 1 == 0:
+            for j in range(4):
+                if traces[i][2+j] not in traces_0:
+                    traces_0[traces[i][2+j]] = 1
+                else:
+                    traces_0[traces[i][2+j]] += 1
+        else:
+            for j in range(4):
+                if traces[i][2+j] not in traces_1:
+                    traces_1[traces[i][2+j]] = 1
+                else:
+                    traces_1[traces[i][2+j]] += 1
+
+    #sort the traces by numerical key value
+    traces_0 = sorted(traces_0.items(), key=lambda x: x[0])
+    traces_1 = sorted(traces_1.items(), key=lambda x: x[0])
+
+    #print the traces
+    print("Traces 0:")
+    for k, v in traces_0:
+        print("  Trace %d: %d" % (k, v))
+    print("Traces 1:")
+    for k, v in traces_1:
+        print("  Trace %d: %d" % (k, v))
+
+    #plot the distributions of the traces
+    # line graph, with x axis being the different power measurements (keys of the dictionary)
+    # and y axis the number of traces that have that power measurement (values of the dictionary)
+    plt.plot([x[0] for x in traces_0], [x[1] for x in traces_0], label="Traces 0")
+    plt.plot([x[0] for x in traces_1], [x[1] for x in traces_1], label="Traces 1")
+    plt.legend()
+    plt.show()
+
+
+    return
+    """
+
+
+
 
     bucket_0 = [0, 0, 0, 0]
     bucket_0_cnt = 0
     bucket_1 = [0, 0, 0, 0]
     bucket_1_cnt = 0
 
-    for i in range(len(traces)):
-        #odd traces are in bucket 0, even traces are in bucket 1
-        if i % 2 == 0:
-            #randomly assign to bucket 0 or 1
-            choice = random.choice([0, 1])
-            if choice == 0:
-                bucket_0_cnt += 1
-                for j in range(4):
-                    bucket_0[j] += traces[i][3+j]
-            else:
-                bucket_1_cnt += 1
-                for j in range(4):
-                    bucket_1[j] += traces[i][3+j]
-        else:
-            #do the opposite of the previous choice
-            if choice == 0:
-                bucket_1_cnt += 1
-                for j in range(4):
-                    bucket_1[j] += traces[i][3+j]
-            else:
-                bucket_0_cnt += 1
-                for j in range(4):
-                    bucket_0[j] += traces[i][3+j]
+
+    # for i in range(len(traces)):
+    #     #odd traces are in bucket 0, even traces are in bucket 1
+    #     if i % 2 == 0:
+    #         #randomly assign to bucket 0 or 1
+    #         choice = random.choice([0, 1])
+    #         if choice == 0:
+    #             bucket_0_cnt += 1
+    #             for j in range(4):
+    #                 bucket_0[j] += traces[i][2+j]
+    #         else:
+    #             bucket_1_cnt += 1
+    #             for j in range(4):
+    #                 bucket_1[j] += traces[i][2+j]
+    #     else:
+    #         #do the opposite of the previous choice
+    #         if choice == 0:
+    #             bucket_1_cnt += 1
+    #             for j in range(4):
+    #                 bucket_1[j] += traces[i][2+j]
+    #         else:
+    #             bucket_0_cnt += 1
+    #             for j in range(4):
+    #                 bucket_0[j] += traces[i][2+j]
     
 
 
-    #print the differences between the buckets
-    for i in range(4):
-        print("Bucket[%d], sum for bucket1: %d, sum for bucket2: %d, diff: %f" % (i, bucket_0[i], bucket_1[i], abs(bucket_0[i] - bucket_1[i])))
+    # #print the differences between the buckets
+    # for i in range(4):
+    #     print("Bucket[%d], sum for bucket1: %d, sum for bucket2: %d, diff: %f" % (i, bucket_0[i], bucket_1[i], abs(bucket_0[i] - bucket_1[i])))
 
-    return
+    # return
 
 
 
@@ -166,18 +229,18 @@ def dpa_analysis(traces, plaintexts):
             #get the sbox output, bearing in mind that the sbox is applied to the plaintext XORed with the key
             # (there are 4 sboxes in use)
             sbox_byte = plaintexts[i] & 0xFF
-            sbox_out = aes_sbox(sbox_byte ^ proposed_key_byte, False)
+            sbox_out = aes_sbox(sbox_byte ^ proposed_key_byte, True)
             #look at least significant bit of sbox_out, if it is 0, add the trace to bucket 0, otherwise put it in bucket 1
-            if sbox_out & 1 == 0:
+            if sbox_out & (1 << 1) == 0:
                 #add elements of trace[i][4:8] to bucket 0
                 bucket_0_cnt += 1
                 for j in range(4):
-                    bucket_0[j] += traces[i][3+j]
+                    bucket_0[j] += traces[i][2+j]
             else:
                 #add elements of trace[i][4:8] to bucket 1
                 bucket_1_cnt += 1
                 for j in range(4):
-                    bucket_1[j] += traces[i][3+j]
+                    bucket_1[j] += traces[i][2+j]
 
 
         # #plot the distributions of the buckets
@@ -218,7 +281,8 @@ def dpa_analysis(traces, plaintexts):
 
 
 def main():
-    traces = load_power_data()
+    raw_traces = load_power_data()
+    traces = differentiate_power_data(raw_traces)
     print("Loaded %d traces" % len(traces))
     
     #make sure all traces have the same length

@@ -1,5 +1,4 @@
 `default_nettype none
-`define SBOX_GF
 
 module top(
     input wire ICE_CLK,
@@ -49,6 +48,8 @@ reg text_in_sel; //1 == text_out_reg, 0 == lfsr_reg
 wire [31:0] text_in = (text_in_sel ? text_reg : lfsr_reg) ^ 32'hDEADC0DE;
 
 // NEWAE mod: GF or LUT sboxes
+`define SBOX_GF_NO
+
 `ifdef SBOX_GF
     aes_sbox sbox_inst00(.U(text_in[  7:  0]), .dec(dec_r), .S(text_out[  7:  0]));
     aes_sbox sbox_inst01(.U(text_in[ 15:  8]), .dec(dec_r), .S(text_out[ 15:  8]));
