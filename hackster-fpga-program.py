@@ -269,7 +269,7 @@ def start_fpga_and_measure_power(uart_name, power_file, num_capture_blocks=4):
     except Exception as e:
         print(e)
         exit(1)
-    print("Starting the FPGA and measuring power.")
+    print("Starting the FPGA and measuring power (%d capture blocks)." % num_capture_blocks)
 
     #start the FPGA
     hackster_prog.startFPGAAndMeasurePower(power_file, num_capture_blocks)
@@ -314,12 +314,12 @@ if __name__ == "__main__":
     read_write = sys.argv[1]
     bin_file = sys.argv[2]
     uart_name = sys.argv[3]
-    if len(sys.argv) == 5:
+    if len(sys.argv) >= 5:
         power_file = sys.argv[4]
     else:
         power_file = "power_data.txt"
     
-    if len(sys.argv) == 6:
+    if len(sys.argv) >= 6:
         num_capture_blocks = int(sys.argv[5])
     else:
         num_capture_blocks = 4

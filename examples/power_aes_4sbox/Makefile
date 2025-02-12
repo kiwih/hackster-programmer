@@ -16,6 +16,6 @@ SYNTH_TOP_MODULE = top
 SIM_TOP_MODULE = top_tb
 
 PROGRAMMER_COMMAND = python3 hackster-fpga-program.py
-NUM_CAPTURE_POWER_BLOCKS = 4000
+NUM_CAPTURE_POWER_BLOCKS = 2000
 
 include ../hackster.mk

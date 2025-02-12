@@ -106,24 +106,40 @@ end
 
 assign ICE_LED = counter > 4'd11; // LED on when counter > 3
 
-//instantiate 128 UNITY gates (as raw LUTs)
-wire [127:0] lut_ins, lut_outs;
-(* keep *)
-SB_LUT4 #(
-    .LUT_INIT(16'h0002)
-) luts [127:0] (
-    .I0(lut_ins),
-    .I1(1'b0),
-    .I2(1'b0),
-    .I3(1'b0),
-    .O(lut_outs)
-);
+//This is a little cursed, but due to the weak signal capturing
+// with my lacklustre power capture hardware, I need to amplify
+// the signals in the FPGA to perform the power analysis
+//We still won't export the signals, just make them "louder"
+// in the power domain.
+//This is done with unity gates.
+//48 unity gates to amplify the signal of a bit
+wire [47:0] lut_ins [0:3];
+wire [47:0] lut_outs [0:3];
 
-//wire all the UNITY gates in a sequency
-assign lut_ins = {lut_outs[126:0], text_reg[0]};
+genvar i;
+generate
+    for(i = 0; i < 4; i = i + 1) begin
+        (* keep *) 
+        SB_LUT4 #(
+            .LUT_INIT(16'h0002)
+        ) luts [47:0] (
+            .I0(lut_ins[i]),
+            .I1(1'b0),
+            .I2(1'b0),
+            .I3(1'b0),
+            .O(lut_outs[i])
+        );
+    end   
+endgenerate
 
+//wire all UNITY gates in a sequence, with each sequence connected to 
+//the least significant bit of one of the bytes of the text_reg
+assign lut_ins[0] = {lut_outs[0][46:0], text_reg[0]};
+assign lut_ins[1] = {lut_outs[1][46:0], text_reg[8]};
+assign lut_ins[2] = {lut_outs[2][46:0], text_reg[16]};
+assign lut_ins[3] = {lut_outs[3][46:0], text_reg[24]};
 
-assign DUMMYO = text_reg[0];
+//assign DUMMYO = text_reg[0];
 
 //take the logical OR of all the output and assign it to RGB_R
 //assign RGB_R = |text_reg[31:0];
