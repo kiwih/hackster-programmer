@@ -36,8 +36,11 @@ end
 wire [31:0] text_out;
 (* keep *) reg [31:0] text_reg;
 reg text_reg_en;
+reg text_clr;
 always @(posedge ICE_CLK) begin
     if(resetn == 1'b0) begin
+        text_reg <= 1'b0;
+    end else if(text_clr == 1'b1) begin
         text_reg <= 1'b0;
     end else if(text_reg_en == 1'b1) begin
         text_reg <= text_out;
@@ -78,7 +81,9 @@ always @(counter) begin
     text_reg_en <= 1'b0; // disable text_reg
     text_in_sel <= 1'b0; // set text_in to lfsr_reg
     lfsr_shift_en <= 1'b0; // disable LFSR shift
+    text_clr <= 1'b0; // don't clear text_reg
     case(counter)
+        4'd10: text_clr <= 1'b1; // clear text_reg
         4'd11: lfsr_shift_en <= 1'b1; // advance LFSR
         4'd12: begin
             text_in_sel <= 1'b0; // set text_in to lfsr_reg
@@ -101,21 +106,21 @@ end
 
 assign ICE_LED = counter > 4'd11; // LED on when counter > 3
 
-// //instantiate 63 NOT gates (as raw LUTs)
-// wire [63:0] lut_ins, lut_outs;
-// (* keep *)
-// SB_LUT4 #(
-//     .LUT_INIT(16'h0001)
-// ) luts [63:0] (
-//     .I0(lut_ins),
-//     .I1(1'b0),
-//     .I2(1'b0),
-//     .I3(1'b0),
-//     .O(lut_outs)
-// );
+//instantiate 128 UNITY gates (as raw LUTs)
+wire [127:0] lut_ins, lut_outs;
+(* keep *)
+SB_LUT4 #(
+    .LUT_INIT(16'h0002)
+) luts [127:0] (
+    .I0(lut_ins),
+    .I1(1'b0),
+    .I2(1'b0),
+    .I3(1'b0),
+    .O(lut_outs)
+);
 
-// //wire all the NOT gates in a sequency
-// assign lut_ins = {lut_outs[62:0], text_reg[0]};
+//wire all the UNITY gates in a sequency
+assign lut_ins = {lut_outs[126:0], text_reg[0]};
 
 
 assign DUMMYO = text_reg[0];
