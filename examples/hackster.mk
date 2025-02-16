@@ -72,6 +72,7 @@ PACK = $(DOCKER) icepack
 # Specify the programmer
 PROGRAMMER_COMMAND ?= hackster-fpga
 PROGRAMMER = $(DOCKER_UART) $(PROGRAMMER_COMMAND)
+PROGRAMMER_MAC = python3 ../../hackster-fpga-program.py
 NUM_CAPTURE_POWER_BLOCKS ?= 4
 
 # ==============================================================================
@@ -125,8 +126,14 @@ clean_all:
 program: bitstream
 	$(PROGRAMMER) w $(BITSTREAM) $(FPGA_PORT) 
 
+program_mac: bitstream
+	$(PROGRAMMER_MAC) w $(BITSTREAM) $(FPGA_PORT)
+
 program_power: bitstream
 	$(PROGRAMMER) p $(BITSTREAM) $(FPGA_PORT) power_data.txt $(NUM_CAPTURE_POWER_BLOCKS)
+
+program_power_mac: bitstream
+	$(PROGRAMMER_MAC) p $(BITSTREAM) $(FPGA_PORT) power_data.txt $(NUM_CAPTURE_POWER_BLOCKS)
 
 $(SYNTH_OUT).svg: $(SYNTH_SOURCES)
 	$(SYNTH) -p "read -sv $(SYNTH_SOURCES); hierarchy -top $(SYNTH_TOP_MODULE); proc; opt; show -format svg -viewer none -prefix $(SYNTH_OUT); write_json simple.$(SYNTH_OUT)"
@@ -145,8 +152,14 @@ run_synth: $(TIMING_OUT) $(BITSTREAM)
 # Programmer
 run_fpga: run_synth program
 
+# Programmer (mac)
+run_fpga_mac: run_synth program_mac
+
 # Programmer and power measurement
 run_fpga_power: run_synth program_power
+
+# Programmer and power measurement
+run_fpga_mac_power: run_synth program_power_mac
 
 # visualization: 
 visualize: $(SYNTH_OUT).svg
