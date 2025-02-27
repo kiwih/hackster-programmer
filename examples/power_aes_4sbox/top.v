@@ -112,9 +112,9 @@ assign ICE_LED = counter > 4'd11; // LED on when counter > 3
 //We still won't export the signals, just make them "louder"
 // in the power domain.
 //This is done with unity gates.
-//48 unity gates to amplify the signal of a bit
-wire [47:0] lut_ins [0:3];
-wire [47:0] lut_outs [0:3];
+//64 unity gates to amplify the signal of a bit
+wire [63:0] lut_ins [0:3];
+wire [63:0] lut_outs [0:3];
 
 genvar i;
 generate
@@ -122,7 +122,7 @@ generate
         (* keep *) 
         SB_LUT4 #(
             .LUT_INIT(16'h0002)
-        ) luts [47:0] (
+        ) luts [63:0] (
             .I0(lut_ins[i]),
             .I1(1'b0),
             .I2(1'b0),
@@ -134,10 +134,10 @@ endgenerate
 
 //wire all UNITY gates in a sequence, with each sequence connected to 
 //the least significant bit of one of the bytes of the text_reg
-assign lut_ins[0] = {lut_outs[0][46:0], text_reg[0]};
-assign lut_ins[1] = {lut_outs[1][46:0], text_reg[8]};
-assign lut_ins[2] = {lut_outs[2][46:0], text_reg[16]};
-assign lut_ins[3] = {lut_outs[3][46:0], text_reg[24]};
+assign lut_ins[0] = {lut_outs[0][62:0], text_reg[0]};
+assign lut_ins[1] = {lut_outs[1][62:0], text_reg[8]};
+assign lut_ins[2] = {lut_outs[2][62:0], text_reg[16]};
+assign lut_ins[3] = {lut_outs[3][62:0], text_reg[24]};
 
 //assign DUMMYO = text_reg[0];
 
