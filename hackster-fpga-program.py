@@ -304,13 +304,21 @@ def read_bin_from_fpga(bin_file, uart_name):
     #quit
     del hackster_prog
 
+def print_usage():
+    print("Usage: {} <r|w|p|s> <bin_file> <uart> [power_file [power_capture_blocks=4]]".format(sys.argv[0]))
+    print("    r - read bin file from FPGA")
+    print("    w - write bin file to FPGA")
+    print("    p - write bin file to FPGA and measure power (power_file argument is required)")
+    print("    s - start the FPGA (bin_file argument is ignored - put any string)")
+
 if __name__ == "__main__":
 
     #get the bin file name from argument 
     import sys
     if len(sys.argv) < 4:
-        print("Usage: {} <r|w> <bin_file> <uart> [power_file [power_capture_blocks=4]]".format(sys.argv[0]))
+        print_usage()
         exit(1)
+
     read_write = sys.argv[1]
     bin_file = sys.argv[2]
     uart_name = sys.argv[3]
@@ -335,8 +343,11 @@ if __name__ == "__main__":
     elif read_write == 'r':
         reset_fpga_programmer(uart_name)
         read_bin_from_fpga(bin_file, uart_name)
+    elif read_write == 's':
+        reset_fpga_programmer(uart_name)
+        start_fpga(uart_name)
     else:
-        print("Usage: {} <r|w> <bin_file> <uart>".format(sys.argv[0]))
+        print_usage()
         exit(1)
 
     

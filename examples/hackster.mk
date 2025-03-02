@@ -123,16 +123,22 @@ clean_all:
 	rm -f *.vvp *.vcd *.json *.asc *.timings *.bin
 
 ### Programming targets ###
-program: bitstream
+program: $(BITSTREAM)
 	$(PROGRAMMER) w $(BITSTREAM) $(FPGA_PORT) 
 
-program_mac: bitstream
+program_mac: $(BITSTREAM)
 	$(PROGRAMMER_MAC) w $(BITSTREAM) $(FPGA_PORT)
 
-program_power: bitstream
+start: $(BITSTREAM)
+	$(PROGRAMMER) s $(BITSTREAM) $(FPGA_PORT)
+
+start_mac: $(BITSTREAM)
+	$(PROGRAMMER_MAC) s $(BITSTREAM) $(FPGA_PORT)
+
+program_power: $(BITSTREAM)
 	$(PROGRAMMER) p $(BITSTREAM) $(FPGA_PORT) power_data.txt $(NUM_CAPTURE_POWER_BLOCKS)
 
-program_power_mac: bitstream
+program_power_mac: $(BITSTREAM)
 	$(PROGRAMMER_MAC) p $(BITSTREAM) $(FPGA_PORT) power_data.txt $(NUM_CAPTURE_POWER_BLOCKS)
 
 $(SYNTH_OUT).svg: $(SYNTH_SOURCES)
@@ -155,6 +161,12 @@ run_fpga: run_synth program
 # Programmer (mac)
 run_fpga_mac: run_synth program_mac
 
+# start the FPGA
+start_fpga: start
+
+# start the FPGA (mac)
+start_fpga_mac: start_mac
+
 # Programmer and power measurement
 run_fpga_power: run_synth program_power
 
@@ -165,4 +177,4 @@ run_fpga_mac_power: run_synth program_power_mac
 visualize: $(SYNTH_OUT).svg
 
 # Phony targets for make
-.PHONY: timing bitstream run_sim run_synth run_fpga run_fpga_power visualize
+.PHONY: timing run_sim run_synth run_fpga run_fpga_power start_fpga run_fpga_mac run_fpga_mac_power start_fpga_mac visualize
