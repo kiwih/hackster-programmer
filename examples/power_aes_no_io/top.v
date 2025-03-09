@@ -8,6 +8,15 @@ module top(
 
 
 reg resetn = 1'b1;
+reg did_reset = 1'b0;
+always @(posedge ICE_CLK) begin
+    if(did_reset == 1'b0 && resetn == 1'b1) begin
+        resetn <= 1'b0;
+    end else if (resetn == 1'b0) begin
+        did_reset <= 1'b1;
+        resetn <= 1'b1;
+    end
+end
 
 reg aes_start;
 wire aes_busy;
@@ -44,35 +53,26 @@ aes_core_static_128 #(
     .busy_o     (aes_busy)
 );
 
-reg did_reset = 1'b0;
-always @(posedge ICE_CLK) begin
-    if(did_reset == 1'b0 && resetn == 1'b1) begin
-        resetn <= 1'b0;
-    end else if (resetn == 1'b0) begin
-        did_reset <= 1'b1;
-        resetn <= 1'b1;
-    end
-end
-
 reg [7:0] counter = 0;
 
 always @(posedge ICE_CLK) begin
     aes_start <= 1'b0;
     lfsr_shift_en <= 1'b0;
-    if(aes_busy == 1'b1) begin
+    //if(aes_busy == 1'b1) begin
+    //    counter <= 0;
+    //end else if(aes_busy == 1'b0) begin
+    counter <= counter + 1;
+    if(counter == 8'hFC) begin 
+        lfsr_shift_en <= 1'b1;
+    end else if(counter == 8'hF0) begin
+        aes_start <= 1'b1;
+    end else if(counter == 8'hFF) begin
         counter <= 0;
-    end else if(aes_busy == 1'b0) begin
-        counter <= counter + 1;
-        if(counter == 8'hFE) begin 
-            lfsr_shift_en <= 1'b1;
-        end else if(counter == 8'hFF) begin
-            counter <= 0;
-            aes_start <= 1'b1;
-        end 
     end
+    //end
 end
 
-assign ICE_LED = aes_busy;
+assign ICE_LED = (counter >= 8'hF0);
 
 //take the logical OR of all the output aes_text_out and assign it to RGB_R
 assign RGB_R = |aes_text_out[127:0];
