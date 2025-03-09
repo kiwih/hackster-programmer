@@ -35,10 +35,7 @@ end
 reg [3:0] counter = 0;
 // if 0-10, do nothing
 // if 11, advance LFSR
-// if 12, set text_in to lfsr_reg and enable text_reg
-// if 13, set text_in to text_reg and enable text_reg
-// if 14, set text_in to lfsr_reg and enable text_reg
-// if 15, set text_in to text_reg and enable text_reg
+// if 12, start the LES system
 
 always @(posedge ICE_CLK) begin
     counter <= counter + 1; // always increment counter
