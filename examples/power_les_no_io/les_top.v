@@ -1,7 +1,7 @@
 module les_top(
     input clk,
     input clr,
-    input wire [31:0] text_in,
+    input wire [31:0] plaintext_in,
     output wire [31:0] cipher_out,
     input wire start,
     output reg busy
@@ -13,7 +13,7 @@ wire [31:0] text_in;
 reg text_reg_en;
 reg text_clr;
 always @(posedge clk) begin
-    if(resetn == 1'b0) begin
+    if(clr == 1'b1) begin
         text_reg <= 1'b0;
     end else if(text_clr == 1'b1) begin
         text_reg <= 1'b0;
@@ -24,7 +24,7 @@ end
 
 wire dec_r = 1'b1;
 reg sbox_in_sel; //1 == text_out_reg, 0 == lfsr_reg
-wire [31:0] sbox_in = (sbox_in_sel ? text_reg : lfsr_reg) ^ 32'hDEADC0DE;
+wire [31:0] sbox_in = (sbox_in_sel ? text_reg : plaintext_in) ^ 32'hDEADC0DE;
 
 // NEWAE mod: GF or LUT sboxes
 `define SBOX_GF_NO
@@ -58,13 +58,13 @@ always @(les_state_counter, start, clr) begin
     if(clr == 1'b1) begin
         les_state_counter_next <= 2'b00;
         text_clr <= 1'b1;
-        busy <= 1'b1;
     end else if(start == 1'b1 && les_state_counter == 2'b00) begin
         les_state_counter_next <= 2'b01;
         text_reg_en <= 1'b1;
         busy <= 1'b1;
     end else if(les_state_counter > 2'b00) begin
         text_reg_en <= 1'b1;
+        sbox_in_sel <= 1'b1;
         les_state_counter_next <= les_state_counter + 1;
         busy <= 1'b1;
     end
@@ -73,6 +73,8 @@ end
 always @(posedge clk) begin
     les_state_counter <= les_state_counter_next;
 end
+
+assign cipher_out = text_reg;
 
 
 
@@ -108,7 +110,6 @@ assign lut_ins[0] = {lut_outs[0][62:0], text_reg[0]};
 assign lut_ins[1] = {lut_outs[1][62:0], text_reg[8]};
 assign lut_ins[2] = {lut_outs[2][62:0], text_reg[16]};
 assign lut_ins[3] = {lut_outs[3][62:0], text_reg[24]};
-
 
 
 

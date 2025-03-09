@@ -64,14 +64,14 @@ wire [31:0] les_cipher_out;
 les_top les_inst(
     .clk(ICE_CLK),
     .clr(les_clr),
-    .text_in(lfsr_reg),
+    .plaintext_in(lfsr_reg),
     .cipher_out(les_cipher_out),
     .start(les_start),
     .busy(les_busy)
 );
 
-assign RGB_B = les_cipher_out[0];
+assign RGB_B = les_busy;
 
-assign ICE_LED = les_busy; // should be same as when counter > 3
+assign ICE_LED = counter > 4'd11;
 
 endmodule
