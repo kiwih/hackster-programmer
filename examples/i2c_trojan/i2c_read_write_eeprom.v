@@ -1,6 +1,6 @@
 `default_nettype none
 
-module i2c_write_eeprom (
+module i2c_read_write_eeprom (
     input wire ICE_CLK,
     inout wire PERIPH_SDA, PERIPH_SCL,
 
