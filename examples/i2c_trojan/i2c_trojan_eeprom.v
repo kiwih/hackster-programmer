@@ -45,7 +45,7 @@ i2c_pin_primitives_ice40 PERIPH_I2C(
 
 
 
-// ------------------- FSM that switches between read and write operation ---------------
+// ------------------- FSM that stores data received by slave and starts trojan from master ---------------
 
 
 
