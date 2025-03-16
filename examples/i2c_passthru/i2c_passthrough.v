@@ -80,11 +80,11 @@ SB_IO #(
 );
 
 reg scl_global_to_ice40 = 0; 
-reg scl_ice40_to_rp2040 = 0; 
+reg scl_ice40_to_global = 0; 
 reg [3:0] scl_delay_cnt = 0;
 
 reg sda_global_to_ice40 = 0; 
-reg sda_ice40_to_rp2040 = 0; //if a 0 is detected on the pi side of SDA, then we set this to "1" for the duration
+reg sda_ice40_to_global = 0; //if a 0 is detected on the pi side of SDA, then we set this to "1" for the duration
 reg [3:0] sda_delay_cnt = 0;
 
 always @(posedge ICE_CLK) begin
@@ -95,11 +95,11 @@ always @(posedge ICE_CLK) begin
         sda_delay_cnt <= sda_delay_cnt - 1;
     end
     //ICE_LED = scl_pi_to_a7;
-    if(scl_delay_cnt == 0 && scl_global_to_ice40 == 0 && scl_ice40_to_rp2040 == 0) begin
+    if(scl_delay_cnt == 0 && scl_global_to_ice40 == 0 && scl_ice40_to_global == 0) begin
         if(global_scl_di == 0) begin
             scl_global_to_ice40 = 1;
         end else if(periph_scl_di == 0) begin
-            scl_ice40_to_rp2040 = 1;
+            scl_ice40_to_global = 1;
         end
     end else begin
         if(scl_global_to_ice40 == 1) begin
@@ -107,19 +107,19 @@ always @(posedge ICE_CLK) begin
                 scl_global_to_ice40 = 0;
                 scl_delay_cnt <= 4'd15;
             end
-        end else if(scl_ice40_to_rp2040 == 1) begin
+        end else if(scl_ice40_to_global == 1) begin
             if(periph_scl_di == 1) begin
-                scl_ice40_to_rp2040 = 0;
+                scl_ice40_to_global = 0;
                 scl_delay_cnt <= 4'd15;
             end
         end
     end
     
-    if(sda_delay_cnt == 0 && sda_global_to_ice40 == 0 && sda_ice40_to_rp2040 == 0) begin //etc (same as above, but for SDA)
+    if(sda_delay_cnt == 0 && sda_global_to_ice40 == 0 && sda_ice40_to_global == 0) begin //etc (same as above, but for SDA)
         if(global_sda_di == 0) begin
             sda_global_to_ice40 = 1;
         end else if(periph_sda_di == 0) begin
-            sda_ice40_to_rp2040 = 1;
+            sda_ice40_to_global = 1;
         end
     end else begin
         if(sda_global_to_ice40 == 1) begin
@@ -127,9 +127,9 @@ always @(posedge ICE_CLK) begin
                 sda_global_to_ice40 = 0;
                 sda_delay_cnt <= 4'd7;
             end
-        end else if(sda_ice40_to_rp2040 == 1) begin
+        end else if(sda_ice40_to_global == 1) begin
             if(periph_sda_di == 1) begin
-                sda_ice40_to_rp2040 = 0;
+                sda_ice40_to_global = 0;
                 sda_delay_cnt <= 4'd7;
             end
         end
@@ -137,9 +137,9 @@ always @(posedge ICE_CLK) begin
 end
 
 //the output enables are then simply the direction we want to hold (since "enabling" will set them to 0)
-assign global_scl_oe = scl_ice40_to_rp2040;
+assign global_scl_oe = scl_ice40_to_global;
 assign periph_scl_oe = scl_global_to_ice40;    
-assign global_sda_oe = sda_ice40_to_rp2040;
+assign global_sda_oe = sda_ice40_to_global;
 assign periph_sda_oe = sda_global_to_ice40; 
 
 endmodule
