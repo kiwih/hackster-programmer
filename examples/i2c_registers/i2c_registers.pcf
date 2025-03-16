@@ -31,5 +31,5 @@ set_io PERIPH_SCL 3
 
 # -------------------------- SYSTEM CLOCK ------------------------------------
 set_io ICE_CLK 37
-set_frequency ICE_CLK 37
+set_frequency ICE_CLK 10
 
