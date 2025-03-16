@@ -31,7 +31,7 @@ i2c_pin_primitives_ice40 PERIPH_I2C(
 
 
 
-// ------------------- Wire LED and RGB with master outputs ---------------
+// ------------------- FSM that swiches between read and write operation ---------------
 
 
 
