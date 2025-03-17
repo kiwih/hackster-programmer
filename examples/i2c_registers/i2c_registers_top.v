@@ -16,7 +16,7 @@ localparam ice_i2c_address = 7'h42;
 
 wire global_sda_di, global_scl_di, global_sda_pulldown, global_scl_pulldown;
 
-i2c_pin_primitives_ice40 GLOBAl_I2C(
+i2c_pin_primitives_ice40 APP_I2C(
     .ICE_CLK(ICE_CLK),
     .SDA(GLOBAL_SDA),
     .SCL(GLOBAL_SCL),
@@ -47,13 +47,13 @@ i2c_simple_slave #(
     .debug_i2c_state(APP[5:2])
 );
 
+// ############## Starter code: text ICE button value to I2C master ##################
+always @(posedge ICE_CLK)
+    dout <= {8{PI_ICE_BTN}};
+
+
 
 // ############## TODO: Connect the least three significant bits of i2c slave received data to RGB ################# 
-
-
-
-// ############## TODO: Connect i2c slave texted data with button signals ##################
-
 
 
 endmodule
