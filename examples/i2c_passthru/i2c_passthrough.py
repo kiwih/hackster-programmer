@@ -1,7 +1,7 @@
 from machine import I2C, Pin
 import time
 
-i2c = machine.I2C(1, scl = machine.Pin(7), sda = machine.Pin(6), freq = 100000)
+i2c = I2C(0, scl = Pin(1), sda = Pin(0), freq = 100000)
 
 # Print all peripheral addresses (EEPROM and accelerometer)
 print(i2c.scan())
