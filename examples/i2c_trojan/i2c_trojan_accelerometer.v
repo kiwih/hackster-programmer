@@ -37,15 +37,15 @@ i2c_pin_primitives_ice40 PERIPH_I2C(
     .SCL_PULLDOWN(periph_scl_pulldown)
 );
 
-// ------------------- Declare your signals here ------------------------
+// ------------------- TODO: Declare your signals here ------------------------
 
 
 
-// ------------------- Instantiate i2c masters and i2c slave here -----------------------
+// ------------------- TODO: Instantiate i2c masters and i2c slave here -----------------------
 
 
 
-// ------------------- FSM to control i2c master and slave ---------------
+// ------------------- TODO: FSM to control i2c master and slave ---------------
 
 
 

@@ -20,15 +20,15 @@ i2c_pin_primitives_ice40 PERIPH_I2C(
     .SCL_PULLDOWN(periph_scl_pulldown)
 );
 
-// ------------------- Declare your signals here ------------------------
+// ------------------- TODO: Declare your signals here ------------------------
 
 
 
-// ------------------- Instantiate i2c master here -----------------------
+// ------------------- TODO: Instantiate i2c master here -----------------------
 
 
 
-// ------------------- FSM that swiches between one read and one write operation ---------------
+// ------------------- TODO: FSM that swiches between one read and one write operation ---------------
 
 
 
