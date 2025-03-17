@@ -14,56 +14,46 @@ module i2c_registers_top(
 
 localparam ice_i2c_address = 7'h42;
 
-wire app_sda_di, app_scl_di, app_sda_pulldown, app_scl_pulldown;
+wire global_sda_di, global_scl_di, global_sda_pulldown, global_scl_pulldown;
 
-i2c_pin_primitives_ice40 APP_I2C(
+i2c_pin_primitives_ice40 GLOBAl_I2C(
     .ICE_CLK(ICE_CLK),
     .SDA(GLOBAL_SDA),
     .SCL(GLOBAL_SCL),
-    .SDA_DIN(app_sda_di),
-    .SCL_DIN(app_scl_di),
-    .SDA_PULLDOWN(app_sda_pulldown),
-    .SCL_PULLDOWN(app_scl_pulldown)
+    .SDA_DIN(global_sda_di),
+    .SCL_DIN(global_scl_di),
+    .SDA_PULLDOWN(global_sda_pulldown),
+    .SCL_PULLDOWN(global_scl_pulldown)
 );
 
 wire [7:0] i2c_rx;
+wire i2c_rx_valid;
 reg [7:0] din = 0;
-wire din_wr;
 reg [7:0] dout = 0;
-
-always @(posedge ICE_CLK) begin
-    if(din_wr) begin
-        din <= i2c_rx;
-    end
-end
 
 i2c_simple_slave #(
     .i2c_address(ice_i2c_address)
 ) i2c_simple_slave_inst (
     .clk(ICE_CLK),
     .rst_n(1),
-    .scl_di(app_scl_di),
-    .sda_di(app_sda_di),
-    .scl_pulldown(app_scl_pulldown),
-    .sda_pulldown(app_sda_pulldown),
+    .scl_di(global_scl_di),
+    .sda_di(global_sda_di),
+    .scl_pulldown(global_scl_pulldown),
+    .sda_pulldown(global_sda_pulldown),
     .stall(0),
-    //.i2c_addr_rw(?),
-    //.i2c_addr_rw_valid_stb(?),
     .i2c_data_rx(i2c_rx),
-    .i2c_data_rx_valid_stb(din_wr),
+    .i2c_data_rx_valid_stb(i2c_rx_valid),
     .i2c_data_tx(dout),
-    //.i2c_data_tx_loaded_stb(?),
-    //.i2c_data_tx_done_stb(?),
-    //.i2c_error_stb(?)
     .debug_i2c_state(APP[5:2])
 );
 
-assign ICE_LED = din[0];
-assign RGB_R = din[1];
-assign RGB_G = din[2];
-assign RGB_B = din[3];
 
-always @(posedge ICE_CLK)
-    dout <= {8{PI_ICE_BTN}};
+// ############## TODO: Connect the least three significant bits of i2c slave received data to RGB ################# 
+
+
+
+// ############## TODO: Connect i2c slave texted data with button signals ##################
+
+
 
 endmodule
