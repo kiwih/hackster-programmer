@@ -171,7 +171,10 @@ start_fpga_mac: start_mac
 run_fpga_power: run_synth program_power
 
 # Programmer and power measurement
-run_fpga_mac_power: run_synth program_power_mac
+run_fpga_power_mac: run_synth program_power_mac
+
+# fix for typo in lab 2 instructions (can be deleted after 2025)
+run_fpga_mac_power: run_fpga_power_mac
 
 # visualization: 
 visualize: $(SYNTH_OUT).svg
