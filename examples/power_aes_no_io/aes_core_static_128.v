@@ -83,6 +83,11 @@ aes_sboxes sbb(
     .sbb_o(sbb_o)
 );
 
+signal_amplify sa(
+    .data(sbb_o)
+);
+
+
 wire [127:0] shr_o;
 aes_shiftrows shr(
     .shr_i(sbb_o),
