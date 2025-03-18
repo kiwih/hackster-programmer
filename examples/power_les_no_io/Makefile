@@ -5,6 +5,7 @@
 
 # List of source files
 SYNTH_SOURCES = top.v \
+				les_top.v \
 				aes/aes_sbox_lut.v \
 				aes/aes_sbox.v 
 
