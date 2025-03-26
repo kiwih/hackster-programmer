@@ -1,0 +1,48 @@
+# -----------------------------------------------------------------------------
+#- basic hackster constraint file (.pcf)
+#- By Hammond Pearce
+#- August 2024
+#- MIT license
+# -----------------------------------------------------------------------------
+
+# -------------------------- SYSTEM CLOCK ------------------------------------
+set_io ICE_CLK 37
+set_frequency ICE_CLK 10
+
+# ------------ INPUTS ------------------------------------------------------
+set_io APP_in[0] 36
+set_io APP_in[1] 34
+set_io APP_in[2] 32
+set_io APP_in[3] 31
+
+# ------------ INPUTS (KEYS) ------------------------------------------------------
+set_io APP_key[0] 28
+set_io APP_key[1] 26
+set_io APP_key[2] 27
+
+# ------------ OUTPUT LED ------------------------------------------------------
+set_io APP_out[0] 25
+set_io APP_out[1] 23
+
+# ------------ APP_ICE40 comms --------------------------------------------
+set_io APP_TX 42
+set_io APP_RX 43
+
+# ------------ OTHER ICE40 COMMS ----------------------------------------------
+set_io PERIPH_SDA 4
+set_io PERIPH_SCL 3
+set_io IMU_INT 9
+
+set_io CRYPTOMEM_SCL 10
+set_io CRYPTOMEM_SDA 11
+
+set_io PI_SCL 19
+set_io PI_SDA 20
+
+set_io PI_SPI_MOSI 46
+set_io PI_SPI_MISO 45
+set_io PI_SPI_SCK 44
+set_io PI_SPI_CS 47
+
+
+
