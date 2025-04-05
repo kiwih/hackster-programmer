@@ -22,12 +22,12 @@ reg rgb_b_pwm = 0;
 SB_RGBA_DRV
   RGB_DRV(.CURREN(1'b1),
           .RGBLEDEN(1'b1),
-          .RGB0PWM(rgb_r_pwm),
+          .RGB0PWM(rgb_b_pwm),
           .RGB1PWM(rgb_g_pwm),
-          .RGB2PWM(rgb_b_pwm),
-          .RGB0(RGB_R),
+          .RGB2PWM(rgb_r_pwm),
+          .RGB0(RGB_B),
           .RGB1(RGB_G),
-          .RGB2(RGB_B));
+          .RGB2(RGB_R));
 
 //clock divider to 100kHz
 reg [23:0] counter_100kHz_div;
