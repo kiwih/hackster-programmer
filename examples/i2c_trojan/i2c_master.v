@@ -84,7 +84,7 @@ always @(posedge clk) begin
         end
         
         START: begin
-            if(periph_scl_falling == 1) begin // wait for the scl_out to be low after the start condition
+            if(periph_sda == 0 && periph_scl_falling == 1) begin // wait for the scl_out to be low after the start condition
                 next_state <= SEND_ADDR_RW;
             end
         end
@@ -145,8 +145,16 @@ always @(posedge clk) begin
             end
         end
 
+        // We always enter DUMMY_WAIT on the rising edge of an ACK: then, once SCL goes
+        // low again, it's DUMMY_WAIT's responsibility to set up SDA so that START/STOP
+        // are able to generate their respective conditions. Then we hand over to
+        // START/STOP on the next rising edge.
+        //
+        // TODO: hang on, shouldn't the value `periph_sda` was set to in DUMMY_WAIT
+        // carry over to STOP/START? they don't set anything until halfway through the
+        // high part of the clock
         DUMMY_WAIT: begin
-            if (periph_scl_falling == 1) begin // wait for scl_out to be low
+            if (periph_scl_rising == 1) begin // wait for scl_out to be low
                 if (rw == 1 && dummy_write == 1) begin
                     next_state <= START; // regen start for read.
                 end else begin
@@ -195,19 +203,10 @@ always @(posedge clk) begin
     error <= 0;
     case (state)
         IDLE: begin
-            // do nothing
+            dummy_write <= 1;
         end
 
         START: begin
-            if (periph_scl_rising == 1) begin
-                // determine whether we are in dummy write.
-                if (dummy_write == 0 && rw == 1) begin
-                    dummy_write <= 1;
-                end else begin
-                    dummy_write <= 0;
-                end
-            end
-
             if (clock_counter == 25 && periph_scl == 1) begin
                 periph_sda <= 0; // initiate the start condition that sda_out goes low when scl_out remains high
             end
@@ -288,9 +287,15 @@ always @(posedge clk) begin
         DUMMY_WAIT: begin
             if (dummy_write == 1 && rw == 1) begin // if in read dummy write
                 // pull up sda as we gen start later.
+                // The slave should be holding SDA low the whole time SCL is high, so there's no
+                // risk of accidentally triggering a stop condition here.
                 periph_sda <= 1;
             end else begin
                 periph_sda <= 0;
+            end
+
+            if (periph_scl_rising == 1) begin
+                dummy_write <= 0;
             end
         end
 
