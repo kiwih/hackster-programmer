@@ -75,7 +75,8 @@ always @(posedge clk) begin
 end
 
 // State transitions
-always @(posedge clk) begin
+always @* begin
+    next_state <= state;
     case (state)
         IDLE: begin
             if (start == 1) begin
@@ -84,7 +85,7 @@ always @(posedge clk) begin
         end
         
         START: begin
-            if(periph_scl_falling == 1) begin // wait for the scl_out to be low after the start condition
+            if(periph_sda == 0 && periph_scl_falling == 1) begin // wait for the scl_out to be low after the start condition
                 next_state <= SEND_ADDR_RW;
             end
         end
@@ -195,19 +196,10 @@ always @(posedge clk) begin
     error <= 0;
     case (state)
         IDLE: begin
-            // do nothing
+            dummy_write <= 1;
         end
 
         START: begin
-            if (periph_scl_rising == 1) begin
-                // determine whether we are in dummy write.
-                if (dummy_write == 0 && rw == 1) begin
-                    dummy_write <= 1;
-                end else begin
-                    dummy_write <= 0;
-                end
-            end
-
             if (clock_counter == 25 && periph_scl == 1) begin
                 periph_sda <= 0; // initiate the start condition that sda_out goes low when scl_out remains high
             end
@@ -291,6 +283,10 @@ always @(posedge clk) begin
                 periph_sda <= 1;
             end else begin
                 periph_sda <= 0;
+            end
+
+            if (periph_scl_falling == 1) begin
+                dummy_write <= 0;
             end
         end
 
