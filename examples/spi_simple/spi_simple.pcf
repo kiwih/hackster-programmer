@@ -11,9 +11,9 @@ set_frequency ICE_CLK 1 #running at 1MHz is very unlikely but we'll put it in as
 
 # ------------ LED ------------------------------------------------------
 set_io ICE_LED 38
-set_io RGB_R 39
+set_io RGB_B 39
 set_io RGB_G 40
-set_io RGB_B 41
+set_io RGB_R 41
 
 # ------------ BTN ------------------------------------------------------
 set_io PI_ICE_BTN 6
