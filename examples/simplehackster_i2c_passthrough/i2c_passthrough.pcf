@@ -1,0 +1,35 @@
+# -----------------------------------------------------------------------------
+#- hackster constraint file (.pcf) !!!for single-micro version of board!!!
+#- By Hammond Pearce
+#- March 2025
+#- MIT license
+# -----------------------------------------------------------------------------
+
+# ------------ LED ------------------------------------------------------
+set_io ICE_LED 23
+set_io RGB_R 39
+set_io RGB_G 40
+set_io RGB_B 41
+
+# ------------ BTN ------------------------------------------------------
+set_io PI_ICE_BTN 21
+
+# ------------ GLOBAL (controller) I2C
+set_io GLOBAL_SCL 25
+set_io GLOBAL_SDA 27
+
+set_io PI_SCL 26
+set_io PI_SDA 28
+
+# ------------ PERIPH I2C1
+# use SDA=11, SCL=10 for cryptomem, SDA=4, SCL=3 for IMU/EEPROM
+set_io PERIPH_SDA 38
+set_io PERIPH_SCL 42
+set_io CMEM_SDA 4
+set_io CMEM_SCL 3
+set_io IMU_INT 43
+
+# -------------------------- SYSTEM CLOCK ------------------------------------
+set_io ICE_CLK 35
+set_frequency ICE_CLK 10
+
