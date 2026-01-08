@@ -7,6 +7,7 @@ function [7:0] xtime;
 	input [7:0] b; xtime={b[6:0],1'b0} ^ (8'h1b & {8{b[7]}});
 endfunction
 
+/*
 function [7:0] x02;
 	input [7:0] b; x02={b[6:0],1'b0} ^ (8'h1b & {8{b[7]}});
 endfunction
@@ -38,6 +39,7 @@ endfunction
 function [7:0] x14;
 	input [7:0] b; x14=x08(b)^x04(b)^x02(b);
 endfunction
+*/
 
 reg [31:0] mxc_tmp;
 always@(mxc_i) begin

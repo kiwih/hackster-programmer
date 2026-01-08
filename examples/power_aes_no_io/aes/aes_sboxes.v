@@ -3,7 +3,7 @@ module aes_sboxes(
     input wire dec_r,           //1 for decrypt, 0 for encrypt
     output wire [127:0] sbb_o   //output of SBOX
 );
-`define SBOX_GF
+`define SBOX_GF_NO
 // NEWAE mod: GF or LUT sboxes
 `ifdef SBOX_GF
     aes_sbox sbox_inst00(.U(sbb_i[  7:  0]), .dec(dec_r), .S(sbb_o[  7:  0]));
