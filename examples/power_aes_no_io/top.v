@@ -1,5 +1,4 @@
 `default_nettype none
-`define SBOX_GF
 
 module top(
     input wire ICE_CLK,
@@ -21,22 +20,22 @@ end
 reg aes_start;
 wire aes_busy;
 
-//32 bit LFSR
-reg [31:0] lfsr_reg = 32'hACE1ACE1;
-//put taps at 32, 22, 2, 1
+//128 bit LFSR
+reg [127:0] lfsr_reg = 128'hACE1ACE159C359C3B386B386670D670C;
+//put taps at 127, 109, 85, 0
 wire lfsr_out;
-assign lfsr_out = lfsr_reg[31] ^ lfsr_reg[21] ^ lfsr_reg[1] ^ lfsr_reg[0];
+assign lfsr_out = lfsr_reg[127] ^ lfsr_reg[109] ^ lfsr_reg[85] ^ lfsr_reg[0];
 reg lfsr_shift_en;
 always @(posedge ICE_CLK) begin
     if(resetn == 1'b0) begin
-        lfsr_reg <= 32'hACE1ACE1;
+        lfsr_reg <= 128'hACE1ACE159C359C3B386B386670D670C;
     end else if(lfsr_shift_en == 1'b1) begin
-        lfsr_reg <= {lfsr_reg[30:0], lfsr_out};
+        lfsr_reg <= {lfsr_reg[126:0], lfsr_out};
     end
 end
 
 
-reg [127:0] aes_text_in = {lfsr_reg, lfsr_reg, lfsr_reg, lfsr_reg}; //4 repetitions of the LFSR
+wire [127:0] aes_text_in = lfsr_reg; //the LFSR
 wire [127:0] aes_text_out;
 wire [127:0] aes_r10_key;
 
@@ -62,7 +61,7 @@ always @(posedge ICE_CLK) begin
     //    counter <= 0;
     //end else if(aes_busy == 1'b0) begin
     counter <= counter + 1;
-    if(counter == 8'hFC) begin 
+    if(counter == 8'hEF) begin 
         lfsr_shift_en <= 1'b1;
     end else if(counter == 8'hF0) begin
         aes_start <= 1'b1;
@@ -75,11 +74,11 @@ end
 assign ICE_LED = (counter >= 8'hF0);
 
 //take the logical OR of all the output aes_text_out and assign it to RGB_R
-assign RGB_R = |aes_text_out[127:0];
+assign RGB_R = aes_text_out[0];
 //take the logical AND of all the output aes_text_out and assign it to RGB_G
-assign RGB_G = &aes_text_out[127:0];
-//take the logical XOR of all the output aes_text_out and assign it to RGB_B
-assign RGB_B = ^aes_text_out[127:0];
-
+assign RGB_G = aes_text_out[127];
+////take the logical XOR of all the output aes_text_out and assign it to RGB_B
+//assign RGB_B = ^aes_text_out[127:0];0
+assign RGB_B = aes_text_out[63];
 //ra
 endmodule
