@@ -107,20 +107,23 @@ aes_sboxes4 sbb(
     .sbb_o(sbb_o_actual)
 );
 
-reg [127:0] stext_o;
+reg [127:0] stext_o_int;
 reg stext_en, stext_clr;
 always@(posedge clk)
 begin
     if(stext_clr)
-        stext_o <= 0;
+        stext_o_int <= 0;
     else if(stext_en)
         case(sbb_col_sel)
-            2'd0: stext_o[ 31: 0]   <= sbb_o_actual;
-            2'd1: stext_o[ 63:32]   <= sbb_o_actual;
-            2'd2: stext_o[ 95:64]   <= sbb_o_actual;
-            2'd3: stext_o[127:96]   <= sbb_o_actual;
+            2'd0: stext_o_int[ 31: 0]   <= sbb_o_actual;
+            2'd1: stext_o_int[ 63:32]   <= sbb_o_actual;
+            2'd2: stext_o_int[ 95:64]   <= sbb_o_actual;
+            2'd3: stext_o_int[127:96]   <= sbb_o_actual;
         endcase
 end
+
+reg silent;
+wire [127:0] stext_o = silent ? 0 : stext_o_int;
 
 // signal_amplify sa(
 //     .data(sbb_o)
@@ -174,6 +177,7 @@ always@(state, load_i, round, start_round, sbb_col_sel) begin
     sbb_col_sel_clr <= 0;
     sbb_col_sel_inc <= 0;
     busy_o <= 0;
+    silent <= 0;
     case(state)
         S_IDLE: begin
             if(load_i) begin
@@ -201,6 +205,7 @@ always@(state, load_i, round, start_round, sbb_col_sel) begin
             sbb_col_sel_inc <= 1; //increment sbox col selector
             stext_en <= 1; //we'll be saving the sbox output
             busy_o <= 1; //we're busy
+            silent <= 1; //don't propagate sbox output yet
             if(sbb_col_sel == 2'd3)
                 next_state <= S_ROUND_RK;
             else
