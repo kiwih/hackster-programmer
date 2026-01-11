@@ -42,6 +42,8 @@ RUN apt-get update && apt-get install -y \
     openocd \
     python3-serial
 
+RUN apt-get install -y libfl-dev
+
 # Install openocd
 # ARG OPENOCD_VERSION=v0.12.0
 # RUN git clone https://github.com/openocd-org/openocd.git /usr/src/openocd \
@@ -55,6 +57,7 @@ RUN apt-get update && apt-get install -y \
 # Install yosys
 RUN git clone https://github.com/YosysHQ/yosys.git /usr/src/yosys \
     && cd /usr/src/yosys \
+    && git checkout v0.58 \
     && git submodule update --init \
     && make -j$(nproc) \
     && make install \
@@ -63,6 +66,7 @@ RUN git clone https://github.com/YosysHQ/yosys.git /usr/src/yosys \
 # Install icestorm
 RUN git clone https://github.com/YosysHQ/icestorm.git /usr/src/icestorm \
     && cd /usr/src/icestorm \
+    && git checkout v1.1 \
     && make -j$(nproc) \
     && make install \
     && cd /
@@ -70,6 +74,7 @@ RUN git clone https://github.com/YosysHQ/icestorm.git /usr/src/icestorm \
 # Install nextpnr
 RUN git clone --recursive --branch nextpnr-0.7 https://github.com/YosysHQ/nextpnr.git /usr/src/nextpnr \
     && cd /usr/src/nextpnr \
+    $$ git checkout nextpnr-0.9 \
     && mkdir -p build && cd build \
     && cmake .. -DARCH=ice40 -DCMAKE_INSTALL_PREFIX=/usr/local \
     && make -j$(nproc) \

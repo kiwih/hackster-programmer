@@ -81,7 +81,7 @@ assign cipher_out = text_reg;
 
 
 
-//This is a little cursed, but due to the weak signal capturing
+/* //This is a little cursed, but due to the weak signal capturing
 // with the simplified LES algorithm, I want to amplify
 // the signals in the FPGA to simplify the power analysis
 //We still won't export the signals, just make them "louder"
@@ -112,7 +112,7 @@ endgenerate
 assign lut_ins[0] = {lut_outs[0][62:0], text_reg[0]};
 assign lut_ins[1] = {lut_outs[1][62:0], text_reg[8]};
 assign lut_ins[2] = {lut_outs[2][62:0], text_reg[16]};
-assign lut_ins[3] = {lut_outs[3][62:0], text_reg[24]};
+assign lut_ins[3] = {lut_outs[3][62:0], text_reg[24]}; */
 
 
 
