@@ -42,16 +42,11 @@ BITSTREAM = $(OUTPUTNAME_ROOT).bin
 # Tools and scripts
 # ==============================================================================
 
-#### Docker commands ####
-# Docker command for accessing the image
-DOCKER = docker run -t -v .:/mount --user $$(id -u):$$(id -g) hackster-deps:v1 
-DOCKER_UART = docker run -t -v .:/mount --device=$(FPGA_PORT) hackster-deps:v1
-
 #### Simulation tools/settings ####
 # Specify the simulator
-SIM = $(DOCKER) iverilog
+SIM = iverilog
 # Specify the VVP (Icarus Verilog simulation runtime) for running the simulation
-VVP = $(DOCKER) vvp
+VVP = vvp
 # Specify the viewer
 VIEWER = gtkwave
 # Compilation flags
@@ -60,19 +55,18 @@ CFLAGS = -g2012
 
 #### Synthesis tools/settings ####
 # Specify the synthesizer
-SYNTH = $(DOCKER) yosys
+SYNTH = yosys
 # Specify the place and route tool
-PNR = $(DOCKER) nextpnr-ice40
+PNR = nextpnr-ice40
 # Specify the timing analysis tool
-TIMING = $(DOCKER) icetime
+TIMING = icetime
 # Specify the bitstream packer
-PACK = $(DOCKER) icepack
+PACK = icepack
 
 ##### Programming tools/settings ####
 # Specify the programmer
-PROGRAMMER_COMMAND ?= hackster-fpga
+PROGRAMMER_COMMAND ?= python3 ../../hackster-fpga-program.py #hackster-fpga
 PROGRAMMER = $(DOCKER_UART) $(PROGRAMMER_COMMAND)
-PROGRAMMER_MAC = python3 ../../hackster-fpga-program.py
 NUM_CAPTURE_POWER_BLOCKS ?= 4
 
 # ==============================================================================
@@ -126,20 +120,11 @@ clean_all:
 program: $(BITSTREAM)
 	$(PROGRAMMER) w $(BITSTREAM) $(FPGA_PORT) 
 
-program_mac: $(BITSTREAM)
-	$(PROGRAMMER_MAC) w $(BITSTREAM) $(FPGA_PORT)
-
 start: $(BITSTREAM)
 	$(PROGRAMMER) s $(BITSTREAM) $(FPGA_PORT)
 
-start_mac: $(BITSTREAM)
-	$(PROGRAMMER_MAC) s $(BITSTREAM) $(FPGA_PORT)
-
 program_power: $(BITSTREAM)
 	$(PROGRAMMER) p $(BITSTREAM) $(FPGA_PORT) power_data.txt $(NUM_CAPTURE_POWER_BLOCKS)
-
-program_power_mac: $(BITSTREAM)
-	$(PROGRAMMER_MAC) p $(BITSTREAM) $(FPGA_PORT) power_data.txt $(NUM_CAPTURE_POWER_BLOCKS)
 
 $(SYNTH_OUT).svg: $(SYNTH_SOURCES)
 	$(SYNTH) -p "read -sv $(SYNTH_SOURCES); hierarchy -top $(SYNTH_TOP_MODULE); proc; opt; show -format svg -viewer none -prefix $(SYNTH_OUT); write_json simple.$(SYNTH_OUT)"
@@ -158,20 +143,11 @@ run_synth: $(TIMING_OUT) $(BITSTREAM)
 # Programmer
 run_fpga: run_synth program
 
-# Programmer (mac)
-run_fpga_mac: run_synth program_mac
-
 # start the FPGA
 start_fpga: start
 
-# start the FPGA (mac)
-start_fpga_mac: start_mac
-
 # Programmer and power measurement
 run_fpga_power: run_synth program_power
-
-# Programmer and power measurement
-run_fpga_power_mac: run_synth program_power_mac
 
 # fix for typo in lab 2 instructions (can be deleted after 2025)
 run_fpga_mac_power: run_fpga_power_mac

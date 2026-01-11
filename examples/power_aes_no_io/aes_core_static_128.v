@@ -31,19 +31,6 @@ begin
         round <= dec_r ? round - 1 : round + 1;
 end
 
-wire [127:0] text_next;
-reg [127:0] text_o;
-reg text_en, text_clr;
-always@(posedge clk)
-begin
-    if(text_clr)
-        text_o <= 0;
-    else if(text_en)
-        text_o <= text_next;
-end
-
-assign data_o = text_o;
-
 wire [127:0] rk0, rk;
 aes_ks_static_128 #(
     .key_i(KEY)
@@ -56,8 +43,23 @@ aes_ks_static_128 #(
 
 wire [127:0] rkx0_o = data_i ^ rk0;
 
-reg roundi_sel; //1: text, 0: rkx0_o
-wire [127:0] roundi = roundi_sel ? text_o : rkx0_o;
+wire [127:0] text_next;
+wire [127:0] text_i;
+reg text_i_sel; //1: text_next, 0: rkx0_o
+assign text_i = text_i_sel ? text_next : rkx0_o;
+reg [127:0] text_o;
+reg text_en, text_clr;
+always@(posedge clk)
+begin
+    if(text_clr)
+        text_o <= 0;
+    else if(text_en)
+        text_o <= text_i;
+end
+
+assign data_o = text_o;
+
+wire [127:0] roundi = text_o;
 
 wire [127:0] mxci_o;
 aes_mixcolumns_inv mxci(
@@ -77,20 +79,60 @@ wire [127:0] sbb_i, sbb_o;
 assign sbb_i = dec_r ? shri_o : roundi; //if decrypting we're using the inverted stuff, 
                                        //otherwise this is start of encryption
 
-aes_sboxes sbb(
-    .sbb_i(sbb_i),
+wire [31:0] sbb_col0 = {sbb_i[ 31:0]};
+wire [31:0] sbb_col1 = {sbb_i[ 63:32]};
+wire [31:0] sbb_col2 = {sbb_i[ 95:64]};
+wire [31:0] sbb_col3 = {sbb_i[127:96]};
+
+reg [1:0] sbb_col_sel;
+reg sbb_col_sel_clr, sbb_col_sel_inc;
+always@(posedge clk)
+begin
+    if(sbb_col_sel_clr)
+        sbb_col_sel <= 0;
+    else if(sbb_col_sel_inc)
+        sbb_col_sel <= sbb_col_sel + 1;
+end
+
+wire [31:0] sbb_i_actual = (sbb_col_sel == 2'd0) ? sbb_col0 :
+                           (sbb_col_sel == 2'd1) ? sbb_col1 :
+                           (sbb_col_sel == 2'd2) ? sbb_col2 :
+                                                  sbb_col3 ; 
+
+wire [31:0] sbb_o_actual;
+
+aes_sboxes4 sbb(
+    .sbb_i(sbb_i_actual),
     .dec_r(dec_r),
-    .sbb_o(sbb_o)
+    .sbb_o(sbb_o_actual)
 );
 
-signal_amplify sa(
-    .data(sbb_o)
-);
+reg [127:0] stext_o_int;
+reg stext_en, stext_clr;
+always@(posedge clk)
+begin
+    if(stext_clr)
+        stext_o_int <= 0;
+    else if(stext_en)
+        case(sbb_col_sel)
+            2'd0: stext_o_int[ 31: 0]   <= sbb_o_actual;
+            2'd1: stext_o_int[ 63:32]   <= sbb_o_actual;
+            2'd2: stext_o_int[ 95:64]   <= sbb_o_actual;
+            2'd3: stext_o_int[127:96]   <= sbb_o_actual;
+        endcase
+end
+
+reg silent;
+wire [127:0] stext_o = silent ? 0 : stext_o_int;
+
+// signal_amplify sa(
+//     .data(sbb_o)
+// );
 
 
 wire [127:0] shr_o;
 aes_shiftrows shr(
-    .shr_i(sbb_o),
+    .shr_i(stext_o),
     .shr_o(shr_o)
 );
 
@@ -103,18 +145,18 @@ aes_mixcolumns mxc(
 reg rkx_i_enc_sel; //1: shr_o, 0: mxc_o
 wire [127:0] rkx_i_enc = rkx_i_enc_sel ? shr_o : mxc_o;
 
-wire [127:0] rkx_i = dec_r ? sbb_o : rkx_i_enc; //if decrypting we're just using the sbox output,
+wire [127:0] rkx_i = dec_r ? stext_o : rkx_i_enc; //if decrypting we're just using the sbox output,
                                                 //if encrypting we now use all the other stuff
 
 assign text_next = rkx_i ^ rk;
 
+localparam [2:0] S_IDLE = 3'd0,
+                 S_CLR = 3'd1,
+                 S_INIT = 3'd2,
+                 S_ROUND_SBOXES = 3'd3,
+                 S_ROUND_RK = 3'd4;
 
-localparam [1:0] S_IDLE = 2'd0,
-                 S_INIT = 2'd1,
-                 S_FIRST = 2'd2,
-                 S_ROUND = 2'd3;
-
-reg [1:0] state, next_state;
+reg [2:0] state, next_state;
 
 always@(posedge clk)
     if (!rst_n)
@@ -122,40 +164,55 @@ always@(posedge clk)
     else
         state <= next_state;
 
-always@(state, load_i, round, start_round) begin
+always@(state, load_i, round, start_round, sbb_col_sel) begin
     round_count <= 0;
     round_start <= 0;
     text_en <= 0;
     text_clr <= 0;
-    roundi_sel <= 0; //1: text, 0: rkx0_o
+    text_i_sel <= 0; //1: text_next, 0: rkx0_o
     shri_i_sel <= 0; //1: roundi, 0: mxci_o
     rkx_i_enc_sel <= 0; //1: shr_o, 0: mxc_o
+    stext_en <= 0;
+    stext_clr <= 0;
+    sbb_col_sel_clr <= 0;
+    sbb_col_sel_inc <= 0;
     busy_o <= 0;
+    silent <= 0;
     case(state)
         S_IDLE: begin
-            if(load_i)
-                next_state = S_INIT;
-            else
+            if(load_i) begin
+                next_state = S_CLR;
+            end else
                 next_state = S_IDLE;
         end
-        S_INIT: begin
+        S_CLR: begin
             round_start <= 1;
+            text_i_sel <= 0; //initial value comes from rkx0_o
             text_clr <= 1; //clear the text
+            stext_clr <= 1; //clear the sbox reg text
+            sbb_col_sel_clr <= 1; //clear sbox col selector
             busy_o <= 1; //we're busy
-            next_state = S_FIRST;
+            next_state = S_INIT;
         end
-        S_FIRST: begin
-            roundi_sel <= 0; //first round takes input xor with key
-            shri_i_sel <= 1; //first round has no inverse mix column if decrypting
+        S_INIT: begin
+            text_i_sel <= 0; //initial value comes from rkx0_o
             text_en <= 1; //we'll be saving the intermediate
-            round_count <= 1; //we're doing a count
             busy_o <= 1; //we're busy
-            next_state = S_ROUND;
+            next_state = S_ROUND_SBOXES;
         end
-        S_ROUND: begin
-            roundi_sel <= 1; //later rounds take the intermediate
-            shri_i_sel <= 0; //later rounds have inverse mix column
-            rkx_i_enc_sel <= 0; //later rounds have mix column
+        S_ROUND_SBOXES: begin
+            shri_i_sel <= (round == 9 ? 1 : 0); //later rounds have inverse mix column
+            sbb_col_sel_inc <= 1; //increment sbox col selector
+            stext_en <= 1; //we'll be saving the sbox output
+            busy_o <= 1; //we're busy
+            silent <= 1; //don't propagate sbox output yet
+            if(sbb_col_sel == 2'd3)
+                next_state <= S_ROUND_RK;
+            else
+                next_state <= S_ROUND_SBOXES;
+        end
+        S_ROUND_RK: begin
+            text_i_sel <= 1; //later rounds take the intermediate
             text_en <= 1; //we'll be saving the intermediate
             round_count <= 1; //we're doing a count
             busy_o <= 1; //we're busy
@@ -164,7 +221,7 @@ always@(state, load_i, round, start_round) begin
             if(round == 0 && start_round == 10 || round == 10 && start_round == 0)
                 next_state <= S_IDLE;
             else
-                next_state <= S_ROUND;
+                next_state <= S_ROUND_SBOXES;
         end
 
     endcase

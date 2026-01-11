@@ -14,7 +14,7 @@ module aes_core_tb();
     wire busy_o;
 
     aes_core_static_128 #(
-        .KEY(128'h2b7e151628aed2a6abf7976676151301)
+        .KEY(128'h00112233445566778899aabbccddeeff)
     ) dut (
         .clk(clk),
         .rst_n(rst_n),
@@ -38,7 +38,7 @@ module aes_core_tb();
 
     initial begin
         plaintext = 128'h00112233445566778899aabbccddeeff;
-        ciphertext = 128'hbb543294c636da27e6701c7e66814a19;
+        ciphertext = 128'h62f679be2bf0d931641e039ca3401bb2;
 
         rst_n = 1;
         clk = 0;
@@ -70,12 +70,16 @@ module aes_core_tb();
         end
         
 
-        //run until busy signal is low
-        while(busy_o == 1) begin
+        //run until busy signal is low or timeout
+        for(int i = 0; i < 100 && busy_o == 1; i++) begin
             $display("Busy: %b, Data: %h", busy_o, data_o);
             #1; clk = 1; #1; clk = 0;
         end
 
+        if(busy_o == 1) begin
+            $display("Error: timeout waiting for busy signal to go low");
+            $finish;
+        end
         $display("Busy: %b, Data: %h", busy_o, data_o);
 
         //check output
