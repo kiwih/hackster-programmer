@@ -5,7 +5,7 @@
 
 # List of source files
 SYNTH_SOURCES = top.v \
-				aes_core_static_128.v \
+				aes_core_static_multicycle_128.v \
 				aes/aes_sbox_lut.v \
 				aes/aes_sbox.v \
 				aes/aes_ks_static_128.v \
