@@ -3,7 +3,7 @@ module aes_ks_static_128_tb();
 
     wire [127:0] rks_o [0:10];
 
-    aes_core_static_multicycle_4sbox_128 #(
+    aes_ks_static_128 #(
         .key_i(128'h2b7e151628aed2a6abf7976676151301)
     ) dut (
         .rks_o(rks_o)

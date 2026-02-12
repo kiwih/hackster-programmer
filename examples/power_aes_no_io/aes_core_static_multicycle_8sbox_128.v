@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 `default_nettype none
-module aes_core_static_128 #(
+module aes_core_static_multicycle_8sbox_128 #(
     parameter [127:0] KEY = 128'h00112233445566778899aabbccddeeff
 )(
 	input wire clk,
@@ -94,6 +94,7 @@ begin
         sbb_col_sel <= sbb_col_sel + 1;
 end
 
+/*
 wire [31:0] sbb_i_actual = (sbb_col_sel == 2'd0) ? sbb_col0 :
                            (sbb_col_sel == 2'd1) ? sbb_col1 :
                            (sbb_col_sel == 2'd2) ? sbb_col2 :
@@ -106,7 +107,19 @@ aes_sboxes4 sbb(
     .dec_r(dec_r),
     .sbb_o(sbb_o_actual)
 );
+*/
+wire [63:0] sbb_i_actual = (sbb_col_sel == 2'd0) ? {sbb_col1, sbb_col0} :
+                           {sbb_col3, sbb_col2} ;
 
+wire [63:0] sbb_o_actual;
+
+aes_sboxes8 sbb(
+    .sbb_i(sbb_i_actual),
+    .dec_r(dec_r),
+    .sbb_o(sbb_o_actual)
+);
+
+/*
 reg [127:0] stext_o_int;
 reg stext_en, stext_clr;
 always@(posedge clk)
@@ -121,6 +134,27 @@ begin
             2'd3: stext_o_int[127:96]   <= sbb_o_actual;
         endcase
 end
+*/
+
+reg [127:0] stext_o_int;
+reg stext_en, stext_clr;
+always@(posedge clk)
+begin
+    if(stext_clr)
+        stext_o_int <= 0;
+    else if(stext_en)
+        case(sbb_col_sel)
+            2'd0: begin 
+                stext_o_int[ 31: 0]   <= sbb_o_actual[ 31: 0];
+                stext_o_int[ 63:32]   <= sbb_o_actual[ 63:32];
+            end
+            default: begin
+                stext_o_int[ 95:64]   <= sbb_o_actual[ 31: 0];
+                stext_o_int[127:96]   <= sbb_o_actual[ 63:32];
+            end
+        endcase
+end
+
 
 reg silent;
 wire [127:0] stext_o = silent ? 0 : stext_o_int;
@@ -206,7 +240,7 @@ always@(state, load_i, round, start_round, sbb_col_sel) begin
             stext_en <= 1; //we'll be saving the sbox output
             busy_o <= 1; //we're busy
             silent <= 1; //don't propagate sbox output yet
-            if(sbb_col_sel == 2'd3)
+            if(sbb_col_sel == 2'd1) /*2'd3 */
                 next_state <= S_ROUND_RK;
             else
                 next_state <= S_ROUND_SBOXES;
@@ -215,6 +249,7 @@ always@(state, load_i, round, start_round, sbb_col_sel) begin
             text_i_sel <= 1; //later rounds take the intermediate
             text_en <= 1; //we'll be saving the intermediate
             round_count <= 1; //we're doing a count
+            sbb_col_sel_clr <= 1; //clear sbox col selector for next round
             busy_o <= 1; //we're busy
             rkx_i_enc_sel <= (round == 10) ? 1 : 0; //last round has no mix column if decrypting 
             

@@ -40,7 +40,7 @@ wire [127:0] aes_text_out;
 wire [127:0] aes_r10_key;
 
 
-aes_core_static_128 #(
+aes_core_static_multicycle_4sbox_128 #(
     .KEY(128'h00112233445566778899aabbccddeeff)
 ) aes_core (
     .clk        (ICE_CLK),

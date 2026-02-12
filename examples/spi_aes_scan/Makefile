@@ -1,11 +1,12 @@
-# Makefile for the hackster
 # ==============================================================================
-# Configuration area:
+# Project configuration
 # ==============================================================================
 
 # List of source files
-SYNTH_SOURCES = top.v \
-				aes_core_static_multicycle_4sbox_128.v \
+SYNTH_SOURCES = spi_aes_scan_top.v \
+				scan_shift_register.v \
+				scan_register.v \
+				aes_core_static_128_scanchain.v \
 				aes/aes_sbox_lut.v \
 				aes/aes_sbox.v \
 				aes/aes_ks_static_128.v \
@@ -13,18 +14,15 @@ SYNTH_SOURCES = top.v \
 				aes/aes_mixcolumns.v \
 				aes/aes_shiftrows_inv.v \
 				aes/aes_shiftrows.v \
-				aes/aes_sboxes.v \
-				aes/aes_sboxes4.v \
-				aes/aes_sboxes8.v \
-				signal_amplify.v 
-SIM_SOURCES = aes_core_tb.v top_tb.v $(SYNTH_SOURCES)
-PCF_SOURCE = top.pcf
+				aes/aes_sboxes.v
+SIM_SOURCES = aes_core_tb.v $(SYNTH_SOURCES)
+PCF_SOURCE = spi_aes_scan.pcf
 
 # Top-level module
-SYNTH_TOP_MODULE = top
+SYNTH_TOP_MODULE = spi_aes_scan_top
 SIM_TOP_MODULE = aes_core_tb
 
-PROGRAMMER_COMMAND = python3 hackster-fpga-program.py
-NUM_CAPTURE_POWER_BLOCKS = 5000
+#SIM_SOURCES = aes_ks_static_128_tb.v $(SYNTH_SOURCES)
+#SIM_TOP_MODULE = aes_ks_static_128_tb
 
 include ../hackster.mk
