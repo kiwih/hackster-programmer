@@ -65,9 +65,9 @@ class HacksterFPGAProgrammer:
             power_data = self.uart.read(1024)
             try:
                 with open(power_file, "a") as f:
-                    print("Got %d bytes of power data" % len(power_data))
-                    for i in range(len(power_data)):
-                        f.write(str(power_data[i]) + "\n")
+                    print("Capture %d: Got %d bytes of power data" % (i, len(power_data)))
+                    for j in range(len(power_data)):
+                        f.write(str(power_data[j]) + "\n")
             except Exception as e:
                 print(e)
                 raise Exception("Failed to save power data to file")
