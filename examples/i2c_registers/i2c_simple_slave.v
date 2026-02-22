@@ -127,6 +127,18 @@ always@(posedge clk ) begin
     end
 end
 
+// This register stores whether the host returned a NAK for our last TX.
+reg i2c_nak;
+wire i2c_nak_clr;
+wire i2c_nak_en;
+always @(posedge clk) begin
+    if (~rst_n || i2c_nak_clr) begin
+        i2c_nak <= 0;
+    end else if (i2c_nak_en) begin
+        i2c_nak <= sda_di_reg;
+    end
+end
+
 localparam  S_IDLE      = 4'h0, 
             S_START     = 4'h1, 
             S_ADDR_RX   = 4'h2,
@@ -134,13 +146,11 @@ localparam  S_IDLE      = 4'h0,
 
             S_STALL  = 4'h4,
 
-            S_DATA_WAIT = 4'h5, 
+            S_DATA_RX       = 4'h5,
+            S_DATA_RX_ACK   = 4'h6,
 
-            S_DATA_RX       = 4'h6,
-            S_DATA_RX_ACK   = 4'h7,
-
-            S_DATA_TX      = 4'h8,
-            S_DATA_TX_ACK  = 4'h9,
+            S_DATA_TX      = 4'h7,
+            S_DATA_TX_ACK  = 4'h8,
 
             S_ERROR     = 4'hD,
             S_IGNORE    = 4'hE,
@@ -173,8 +183,9 @@ always@* begin
     i2c_buf_tx_shift_en <= 0;
     i2c_buf_cnt_clr <= 0;
     i2c_buf_cnt_en <= 0;
+    i2c_nak_clr <= 0;
+    i2c_nak_en <= 0;
 
-    i2c_addr_rw_valid_stb <= 0;
     i2c_data_tx_loaded_stb <= 0;
     i2c_data_tx_done_stb <= 0;
     i2c_error_stb <= 0;
@@ -192,6 +203,7 @@ case(state)
             next_state <= S_IDLE;
     end
     S_START: begin //now wait for SCL to go low to join SDA
+        i2c_nak_clr <= 1;
         if(sda_di_reg == 0 && scl_di_reg == 0) begin
             next_state <= S_ADDR_RX;
             i2c_buf_clr <= 1;
@@ -237,17 +249,6 @@ case(state)
         end else begin
             i2c_clock_stretch <= 1; //we'll always stall at least 1 clock cycle 
                                     //  for stability reasons
-            next_state <= S_DATA_WAIT;
-        end
-    end
-    
-    S_DATA_WAIT: begin
-        //wait for the next sda falling edge before going to tx/rx as needed
-        //(it is however possible to have a re-start)
-        if(sda_falling_edge == 1 && scl_di_reg == 1) begin
-            //restart condition
-            next_state <= S_START;
-        end else if(sda_di_reg == 0 && scl_di_reg == 0) begin
             if(i2c_addr_rw_reg[0] == 0) begin
                 i2c_buf_clr <= 1;
                 i2c_buf_cnt_clr <= 1;
@@ -255,11 +256,10 @@ case(state)
             end else begin
                 i2c_buf_ld_tx <= 1;
                 i2c_buf_cnt_clr <= 1;
-                i2c_data_tx_loaded_stb <= 1;
+                i2c_data_tx_loaded_stb <= ~i2c_nak;
                 next_state <= S_DATA_TX;
             end
-        end else
-            next_state <= S_DATA_WAIT;
+        end
     end
 
     S_DATA_RX: begin
@@ -297,20 +297,25 @@ case(state)
     end
 
     S_DATA_TX: begin
-        i2c_tx_en <= 1;
+        i2c_tx_en <= ~i2c_nak;
+        // TODO: check for start conditions here too
         if(sda_rising_edge == 1 && scl_di_reg == 1 && i2c_buf_cnt <= 1)
             //we're done here
             next_state <= S_DONE;
         else if(sda_rising_edge == 1 && scl_di_reg == 1 && i2c_buf_cnt <= 1)
             //this is an error, this shouldn't happen mid-byte
             next_state <= S_ERROR;
-        else if(scl_falling_edge == 1 && i2c_buf_cnt != 3'h7) begin
-            i2c_buf_tx_shift_en <= 1;
-            i2c_buf_cnt_en <= 1;
-            next_state <= S_DATA_TX;
-        end else if(scl_falling_edge == 1 && i2c_buf_cnt == 7) begin
-            i2c_data_tx_done_stb <= 1;
-            next_state <= S_DATA_TX_ACK;
+        else if (scl_falling_edge == 1) begin
+            if (i2c_nak == 1)
+                next_state <= S_ERROR;
+            else if(i2c_buf_cnt != 3'h7) begin
+                i2c_buf_tx_shift_en <= 1;
+                i2c_buf_cnt_en <= 1;
+                next_state <= S_DATA_TX;
+            end else begin
+                i2c_data_tx_done_stb <= 1;
+                next_state <= S_DATA_TX_ACK;
+            end
         end else  
             next_state <= S_DATA_TX;
     end
@@ -319,8 +324,12 @@ case(state)
         //unlike with the RX_ACK, the ACK actually comes from the master
         if(scl_falling_edge) 
             next_state <= S_STALL;
-        else
+        else begin
+            if (scl_rising_edge == 1) begin
+                i2c_nak_en <= 1;
+            end
             next_state <= S_DATA_TX_ACK;
+        end
     end
 
     S_IGNORE: begin
@@ -343,7 +352,7 @@ endcase
 end
 
 assign scl_pulldown = 0 | i2c_clock_stretch;
-assign sda_pulldown = 0 | i2c_ack | (i2c_tx_en ? i2c_buf[7] : 0);
+assign sda_pulldown = 0 | i2c_ack | (i2c_tx_en ? ~i2c_buf[7] : 0);
 
 
 
