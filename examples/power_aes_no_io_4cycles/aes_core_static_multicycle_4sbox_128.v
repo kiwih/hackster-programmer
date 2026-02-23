@@ -41,13 +41,33 @@ aes_ks_static_128 #(
     .rk(rk)
 );
 
+reg [1:0] sbb_col_sel;
+reg sbb_col_sel_clr, sbb_col_sel_inc;
+always@(posedge clk)
+begin
+    if(sbb_col_sel_clr)
+        sbb_col_sel <= 0;
+    else if(sbb_col_sel_inc)
+        sbb_col_sel <= sbb_col_sel + 1;
+end
+
 wire [127:0] rkx0_o = data_i ^ rk0;
 
-wire [127:0] text_next;
+wire [31:0] text_next_col;
+reg [127:0] text_next;
+reg [127:0] text_o;
+always @(text_next_col, text_next) begin
+    case(sbb_col_sel)
+        2'd0: text_next <= {text_o[127:32], text_next_col};
+        2'd1: text_next <= {text_o[127:64], text_next_col, text_o[31:0]};
+        2'd2: text_next <= {text_o[127:96], text_next_col, text_o[63:0]};
+        2'd3: text_next <= {text_next_col, text_o[95:0]};
+    endcase
+end
+
 wire [127:0] text_i;
 reg text_i_sel; //1: text_next, 0: rkx0_o
 assign text_i = text_i_sel ? text_next : rkx0_o;
-reg [127:0] text_o;
 reg text_en, text_clr;
 always@(posedge clk)
 begin
@@ -59,6 +79,9 @@ end
 
 assign data_o = text_o;
 
+//TODO: this doesn't work right now: the text_next is overwriting some of the bytes
+// of text_o before they're used in the round inputs (the shift rows pull bytes from all over the place, but we're writing in a whole column at a time). 
+// We may need to add some extra registers to hold intermediate values or something.
 wire [127:0] roundi = text_o;
 
 wire [127:0] mxci_o;
@@ -85,15 +108,7 @@ wire [31:0] sbb_col1 = {sbb_i[ 63:32]};
 wire [31:0] sbb_col2 = {sbb_i[ 95:64]};
 wire [31:0] sbb_col3 = {sbb_i[127:96]};
 
-reg [1:0] sbb_col_sel;
-reg sbb_col_sel_clr, sbb_col_sel_inc;
-always@(posedge clk)
-begin
-    if(sbb_col_sel_clr)
-        sbb_col_sel <= 0;
-    else if(sbb_col_sel_inc)
-        sbb_col_sel <= sbb_col_sel + 1;
-end
+
 
 wire [31:0] sbb_i_actual = (sbb_col_sel == 2'd0) ? sbb_col0 :
                            (sbb_col_sel == 2'd1) ? sbb_col1 :
@@ -108,42 +123,42 @@ aes_sboxes4 sbb(
     .sbb_o(sbb_o_actual)
 );
 
-reg [127:0] stext_o_int;
-reg stext_en, stext_clr;
-always@(posedge clk)
-begin
-    if(stext_clr)
-        stext_o_int <= 0;
-    else if(stext_en)
-        case(sbb_col_sel)
-            2'd0: stext_o_int[ 31: 0]   <= sbb_o_actual;
-            2'd1: stext_o_int[ 63:32]   <= sbb_o_actual;
-            2'd2: stext_o_int[ 95:64]   <= sbb_o_actual;
-            2'd3: stext_o_int[127:96]   <= sbb_o_actual;
-        endcase
-end
+// reg [127:0] stext_o_int;
+// reg stext_en, stext_clr;
+// always@(posedge clk)
+// begin
+//     if(stext_clr)
+//         stext_o_int <= 0;
+//     else if(stext_en)
+//         case(sbb_col_sel)
+//             2'd0: stext_o_int[ 31: 0]   <= sbb_o_actual;
+//             2'd1: stext_o_int[ 63:32]   <= sbb_o_actual;
+//             2'd2: stext_o_int[ 95:64]   <= sbb_o_actual;
+//             2'd3: stext_o_int[127:96]   <= sbb_o_actual;
+//         endcase
+// end
 
-reg silent;
-wire [127:0] stext_o = silent ? 0 : stext_o_int;
-
-// signal_amplify sa(
-//     .data(sbb_o)
-// );
-
-
-wire [127:0] mxc_o;
-aes_mixcolumns mxc(
-    .mxc_i(stext_o),
+wire [31:0] mxc_o;
+aes_mixcolumn mxc(
+    .mxc_i(sbb_o_actual),
     .mxc_o(mxc_o)
 );
 
 reg rkx_i_enc_sel; //1: stext_o, 0: mxc_o
-wire [127:0] rkx_i_enc = rkx_i_enc_sel ? stext_o : mxc_o;
+wire [31:0] rkx_i_enc = rkx_i_enc_sel ? sbb_o_actual : mxc_o;
 
-wire [127:0] rkx_i = dec_r ? stext_o : rkx_i_enc; //if decrypting we're just using the sbox output,
+wire [31:0] rkx_i = dec_r ? sbb_o_actual : rkx_i_enc; //if decrypting we're just using the sbox output,
                                                 //if encrypting we now use all the other stuff
 
-assign text_next = rkx_i ^ rk;
+wire [31:0] rk_col0 = {rk[ 31: 0]};
+wire [31:0] rk_col1 = {rk[ 63:32]};
+wire [31:0] rk_col2 = {rk[ 95:64]};
+wire [31:0] rk_col3 = {rk[127:96]};
+
+assign text_next_col = (sbb_col_sel == 2'd0) ? (rkx_i ^ rk_col0) :
+                   (sbb_col_sel == 2'd1) ? (rkx_i ^ rk_col1) :
+                   (sbb_col_sel == 2'd2) ? (rkx_i ^ rk_col2) :
+                                          (rkx_i ^ rk_col3);
 
 localparam [2:0] S_IDLE = 3'd0,
                  S_CLR = 3'd1,
@@ -167,12 +182,12 @@ always@(state, load_i, round, start_round, sbb_col_sel) begin
     text_i_sel <= 0; //1: text_next, 0: rkx0_o
     shri_i_sel <= 0; //1: roundi, 0: mxci_o
     rkx_i_enc_sel <= 0; //1: stext_o, 0: mxc_o
-    stext_en <= 0;
-    stext_clr <= 0;
+    //stext_en <= 0;
+    //stext_clr <= 0;
     sbb_col_sel_clr <= 0;
     sbb_col_sel_inc <= 0;
     busy_o <= 0;
-    silent <= 0;
+    //silent <= 0;
     case(state)
         S_IDLE: begin
             if(load_i) begin
@@ -184,7 +199,7 @@ always@(state, load_i, round, start_round, sbb_col_sel) begin
             round_start <= 1;
             text_i_sel <= 0; //initial value comes from rkx0_o
             text_clr <= 1; //clear the text
-            stext_clr <= 1; //clear the sbox reg text
+            //stext_clr <= 1; //clear the sbox reg text
             sbb_col_sel_clr <= 1; //clear sbox col selector
             busy_o <= 1; //we're busy
             next_state = S_INIT;
@@ -198,9 +213,10 @@ always@(state, load_i, round, start_round, sbb_col_sel) begin
         S_ROUND_SBOXES: begin
             shri_i_sel <= dec_r ? (round == 9 ? 1 : 0) : 1; //later rounds of decryption have inverse mix column
             sbb_col_sel_inc <= 1; //increment sbox col selector
-            stext_en <= 1; //we'll be saving the sbox output
+            text_i_sel <= 1; //later rounds take the intermediate
+            text_en <= 1; //we'll be saving the sbox output
             busy_o <= 1; //we're busy
-            silent <= 1; //don't propagate sbox output yet
+            //silent <= 1; //don't propagate sbox output yet
             if(sbb_col_sel == 2'd3)
                 next_state <= S_ROUND_RK;
             else

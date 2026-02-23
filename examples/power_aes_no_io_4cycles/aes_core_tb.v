@@ -14,7 +14,7 @@ module aes_core_tb();
     wire busy_o;
 
     aes_core_static_multicycle_4sbox_128 #(
-        .KEY(128'h00112233445566778899aabbccddeeff)
+        .KEY(128'hffffffffffffffffffffffffffffffff)
     ) dut (
         .clk(clk),
         .rst_n(rst_n),

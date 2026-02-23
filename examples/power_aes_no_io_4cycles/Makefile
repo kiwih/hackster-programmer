@@ -10,7 +10,7 @@ SYNTH_SOURCES = top.v \
 				aes/aes_sbox.v \
 				aes/aes_ks_static_128.v \
 				aes/aes_mixcolumns_inv.v \
-				aes/aes_mixcolumns.v \
+				aes/aes_mixcolumn.v \
 				aes/aes_shiftrows.v \
 				aes/aes_sboxes.v \
 				aes/aes_sboxes4.v \
