@@ -65,10 +65,6 @@ def main():
         print("Error: AES did not go busy")
         return
     
-    
-    
-    
-    
     #run 12 clock cycles to finish the system
     # (13 clock cycles total:
     # 1 IDLE state                                
