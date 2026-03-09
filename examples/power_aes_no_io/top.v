@@ -57,9 +57,7 @@ reg [7:0] counter = 0;
 always @(posedge ICE_CLK) begin
     aes_start <= 1'b0;
     lfsr_shift_en <= 1'b0;
-    //if(aes_busy == 1'b1) begin
-    //    counter <= 0;
-    //end else if(aes_busy == 1'b0) begin
+
     counter <= counter + 1;
     if(counter == 8'hEF) begin 
         lfsr_shift_en <= 1'b1;
@@ -73,12 +71,9 @@ end
 
 assign ICE_LED = (counter >= 8'hF0);
 
-//take the logical OR of all the output aes_text_out and assign it to RGB_R
+//some arbitrary way to visualize the output on the RGB LEDs, just to have some visible output that changes based on the input
 assign RGB_R = aes_text_out[0];
-//take the logical AND of all the output aes_text_out and assign it to RGB_G
 assign RGB_G = aes_text_out[127];
-////take the logical XOR of all the output aes_text_out and assign it to RGB_B
-//assign RGB_B = ^aes_text_out[127:0];0
 assign RGB_B = aes_text_out[63];
-//ra
+
 endmodule
