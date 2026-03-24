@@ -1,0 +1,37 @@
+# -----------------------------------------------------------------------------
+#- hackster constraint file (.pcf)
+#- By Hammond Pearce
+#- August 2024
+#- MIT license
+# -----------------------------------------------------------------------------
+
+# ------------ LED ------------------------------------------------------
+set_io ICE_LED 38
+set_io RGB_B 39
+set_io RGB_G 40
+set_io RGB_R 41
+
+# ------------ BTN ------------------------------------------------------
+set_io PI_ICE_BTN 6
+
+# ------------ GLOBAL (controller) I2C
+set_io global_sda 18
+set_io global_scl 19
+
+# ------------ PERIPH I2C1
+# use SDA=11, SCL=10 for cryptomem, SDA=4, SCL=3 for IMU/EEPROM
+set_io periph_sda 4
+set_io periph_scl 3
+
+set_io -pullup yes periph_int 9
+set_io rpi_gpio8 47
+
+# -------------------------- SYSTEM CLOCK ------------------------------------
+set_io ICE_CLK 37
+set_frequency ICE_CLK 37
+
+#------------------- UARTs
+set_io appmicro_tx 42
+set_io appmicro_rx 43
+set_io rpi_tx 20
+set_io rpi_rx 21
