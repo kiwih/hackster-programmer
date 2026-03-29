@@ -62,10 +62,12 @@ PNR = nextpnr-ice40
 TIMING = icetime
 # Specify the bitstream packer
 PACK = icepack
+# Specify the python3 command
+PYTHON ?= python3
 
 ##### Programming tools/settings ####
 # Specify the programmer
-PROGRAMMER_COMMAND ?= python3 ../../hackster-fpga-program.py #hackster-fpga
+PROGRAMMER_COMMAND ?= $(PYTHON) ../../hackster-fpga-program.py #hackster-fpga
 PROGRAMMER = $(DOCKER_UART) $(PROGRAMMER_COMMAND)
 NUM_CAPTURE_POWER_BLOCKS ?= 4
 
@@ -134,6 +136,11 @@ $(SYNTH_OUT).svg: $(SYNTH_SOURCES)
 # Recipe area
 # ==============================================================================
 
+check_zid:
+ifdef ZID
+	$(error Unexpected ZID - are you attempting to download a graded bitstream for a lab? Please check that you are running this command from the right directory.)
+endif
+
 # Simulate and view
 run_sim: $(SIM_OUT) simulate view
 
@@ -141,16 +148,13 @@ run_sim: $(SIM_OUT) simulate view
 run_synth: $(TIMING_OUT) $(BITSTREAM)
 
 # Programmer
-run_fpga: run_synth program
+run_fpga: check_zid run_synth program
 
 # start the FPGA
-start_fpga: start
+start_fpga: check_zid start
 
 # Programmer and power measurement
-run_fpga_power: run_synth program_power
-
-# fix for typo in lab 2 instructions (can be deleted after 2025)
-run_fpga_mac_power: run_fpga_power_mac
+run_fpga_power: check_zid run_synth program_power
 
 # visualization: 
 visualize: $(SYNTH_OUT).svg
