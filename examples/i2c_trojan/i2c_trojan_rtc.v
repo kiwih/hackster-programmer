@@ -1,6 +1,6 @@
 `default_nettype none
 
-module i2c_trojan_accelerometer(
+module i2c_trojan_rtc(
     input wire ICE_CLK,
     
     inout wire GLOBAL_SDA, GLOBAL_SCL,
@@ -37,15 +37,15 @@ i2c_pin_primitives_ice40 PERIPH_I2C(
     .SCL_PULLDOWN(periph_scl_pulldown)
 );
 
-// ------------------- TODO: Declare your signals here ------------------------
+// ------------------- Declare your signals here ------------------------
 
 
 
-// ------------------- TODO: Instantiate i2c masters and i2c slave here -----------------------
+// ------------------- Instantiate i2c master and i2c slave here -----------------------
 
 
 
-// ------------------- TODO: FSM to control i2c master and slave ---------------
+// ------------------- FSM that stores data received by slave and starts trojan from master ---------------
 
 
 

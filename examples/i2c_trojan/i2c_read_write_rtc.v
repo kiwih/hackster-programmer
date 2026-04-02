@@ -1,6 +1,6 @@
 `default_nettype none
 
-module i2c_read_write_eeprom (
+module i2c_read_write_rtc (
     input wire ICE_CLK,
     inout wire PERIPH_SDA, PERIPH_SCL,
     input wire PI_ICE_BTN,
@@ -9,7 +9,7 @@ module i2c_read_write_eeprom (
 
 wire periph_sda_di, periph_scl_di, periph_sda_pulldown, periph_scl_pulldown;
 
-// Instantiate eeprom i2c scl and sda inout pins.
+// Instantiate rtc i2c scl and sda inout pins.
 i2c_pin_primitives_ice40 PERIPH_I2C(
     .ICE_CLK(ICE_CLK),
     .SDA(PERIPH_SDA),

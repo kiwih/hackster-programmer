@@ -4,7 +4,6 @@ import time
 # PCF8563 7-bit I2C address
 RTC_ADDR = 0x51
 
-# RP2040 / Pico example pins: SDA=GP2, SCL=GP3
 i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=100_000)
 
 def bcd(n):
