@@ -5,6 +5,31 @@
 `default_nettype none
 module i2c_simple_slave_tb();
 
+    reg clk = 0;
+    reg rst_n = 0;
+    reg scl_di = 0;
+    reg sda_di = 0;
+
+    wire scl_pulldown;
+    wire sda_pulldown;
+    reg sda_pulldown_reg = 0;
+
+    reg stall;
+    wire [7:0] i2c_addr_rw;
+    wire i2c_addr_rw_valid_stb;
+    
+    wire [7:0] i2c_data_rx;
+    reg [7:0] i2c_data_rx_TB_CAPTURE;
+    wire i2c_data_rx_valid_stb;
+
+    reg [7:0] i2c_data_tx;
+    wire i2c_data_tx_loaded_stb;
+    wire i2c_data_tx_done_stb;
+    wire i2c_error_stb;
+
+    reg i2c_data_tx_loaded_TB_CAPTURE;
+    reg i2c_error_TB_CAPTURE;
+
     task test_i2c_master_send_startbit;
         sda_di = 0;
         scl_di = 1;
@@ -58,7 +83,7 @@ module i2c_simple_slave_tb();
         for(i = 0; i < 8; i = i + 1) begin
             sda_di = 0;
             scl_di = 0; #20; scl_di = 1;
-            receive_byte[7-i] = sda_pulldown; 
+            receive_byte[7-i] = ~sda_pulldown; 
             #10; scl_di = 0;
             #20;
         end
@@ -107,30 +132,7 @@ module i2c_simple_slave_tb();
         #20;
     endtask
 
-    reg clk = 0;
-    reg rst_n = 0;
-    reg scl_di = 0;
-    reg sda_di = 0;
-
-    wire scl_pulldown;
-    wire sda_pulldown;
-    reg sda_pulldown_reg = 0;
-
-    reg stall;
-    wire [7:0] i2c_addr_rw;
-    wire i2c_addr_rw_valid_stb;
     
-    wire [7:0] i2c_data_rx;
-    reg [7:0] i2c_data_rx_TB_CAPTURE;
-    wire i2c_data_rx_valid_stb;
-
-    reg [7:0] i2c_data_tx;
-    wire i2c_data_tx_loaded_stb;
-    wire i2c_data_tx_done_stb;
-    wire i2c_error_stb;
-
-    reg i2c_data_tx_loaded_TB_CAPTURE;
-    reg i2c_error_TB_CAPTURE;
 
     i2c_simple_slave #(
         .i2c_address(7'h42)

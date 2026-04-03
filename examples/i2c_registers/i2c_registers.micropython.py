@@ -1,5 +1,5 @@
 import machine
-
+import time
 global_sda = machine.Pin(0, machine.Pin.IN)
 global_scl = machine.Pin(1, machine.Pin.IN)
 
@@ -7,14 +7,25 @@ target = 0x42
 txbuf = bytearray([0x00])
 
 #two options either 1 or 2
-method = 2
+method = 1
 
 if method == 1:
     #option 1: using underlying hardware at speed
 
     i2c = machine.I2C(0, scl=global_scl, sda=global_sda)
-    
-    i2c.writeto(target, txbuf)
+
+    #make a loop which reads each 1 second and writes a counter to the target i2c slave, which will display the counter on its RGB LED
+    counter = 0
+    while True:
+        counter = (counter + 1) % 256
+        txbuf[0] = counter
+        i2c.writeto(target, txbuf)
+
+        #read back the target
+        rxbuf = i2c.readfrom(target, 1)
+        print("Counter: %d, Target Readback: %d" % (counter, rxbuf[0]))
+        time.sleep(1)
+
     
 elif method == 2:
     #option 2: slower piecemeal using the components of softI2C and displaying state of internal i2c register at each phase

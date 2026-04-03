@@ -43,8 +43,6 @@ module spi_aes_top(
     reg aes_start;
     wire aes_busy;
 
-    reg [127:0] aes_key_in = 128'h00112233445566778899aabbccddeeff;
-    reg [127:0] aes_text_in = 128'h00112233445566778899aabbccddeeff;
     wire [127:0] aes_text_out;
     wire [127:0] aes_r10_key;
 

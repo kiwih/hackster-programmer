@@ -54,6 +54,11 @@ always @(posedge ICE_CLK)
 
 
 // ############## TODO: Connect the least three significant bits of i2c slave received data to RGB ################# 
+always @(posedge ICE_CLK) 
+    if (i2c_rx_valid) begin
+        din <= i2c_rx;
+    end
 
+assign {RGB_R, RGB_G, RGB_B} = din[2:0];
 
 endmodule
