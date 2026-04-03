@@ -306,9 +306,9 @@ case(state)
             //this is an error, this shouldn't happen mid-byte
             next_state <= S_ERROR;
         end else if (scl_falling_edge == 1) begin
-            if (i2c_nak == 1)
+            if (i2c_nak == 1) begin
                 next_state <= S_ERROR;
-            else if(i2c_buf_cnt != 3'h7) begin
+            end else if(i2c_buf_cnt != 3'h7) begin
                 i2c_buf_tx_shift_en <= 1;
                 i2c_buf_cnt_en <= 1;
                 next_state <= S_DATA_TX;

@@ -92,7 +92,7 @@ module i2c_simple_slave_tb();
     task test_i2c_master_test_stretch_tx_ack;
         input want_stretch;
         //send ack
-        sda_di = 1;
+        sda_di = 0;
         scl_di = 0; #20; scl_di = 1; #10; scl_di = 0;
         #20;
         if(scl_pulldown == 0 && want_stretch) begin
