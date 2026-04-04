@@ -20,9 +20,11 @@ module i2c_master(input             i_clk,              //input clock to the mod
                   input      [7:0]  i_addr_w_rw,        //7 bit address, LSB is the read write bit, with 0 being write, 1 being read
                   input      [15:0] i_sub_addr,         //contains sub addr to send to slave, partition is decided on bit_sel
                   input             i_sub_len,          //denotes whether working with an 8 bit or 16 bit sub_addr, 0 is 8bit, 1 is 16 bit
-                  input      [23:0] i_byte_len,         //denotes whether a single or sequential read or write will be performed (denotes number of bytes to read or write)
+                  input      [23:0] read_byte_len,      //denotes whether a single or sequential read or write will be performed (denotes number of bytes to read or write)
                   input      [7:0]  i_data_write,       //Data to write if performing write action
                   input             req_trans,          //denotes when to start a new transaction
+
+                  input             i_stall,            //if true, then i2c_master will stall the current transaction at the end of the byte, and wait for the master to denote that it is ready to continue by deasserting i_stall. 
                   
                   /** For Reads **/
                   output reg [7:0]  data_out,
@@ -35,6 +37,7 @@ module i2c_master(input             i_clk,              //input clock to the mod
                   output             sda_pulldown,           //when 1, drive sda with sda_o, when 0, set sda to high impedance (resistors will pull it high)
 
                   /** Comms to Master Module **/
+                  input             write_data_done,    //For write operations, this denotes that the master has no more bytes to send, for read operations, this is ignored since master will have already specified how many bytes to read
                   output reg        req_data_chunk ,    //Request master to send new data chunk in i_data_write
                   output reg        busy,               //denotes whether module is currently communicating with a slave
                   output reg        nack                //denotes whether module is encountering a nack from slave (only activates when master is attempting to contact device)
@@ -89,7 +92,8 @@ localparam [3:0] IDLE        = 4'd0,
                  ACK_NACK_RX = 4'd8,
                  ACK_NACK_TX = 4'd9,
                  STOP        = 4'hA,
-                 RELEASE_BUS = 4'hB;
+                 RELEASE_BUS = 4'hB,
+                 STALL       = 4'hC;
                  
 //Modify These Parameters for other targets
 localparam [15:0] DIV_100MHZ = 16'd125;         //desire 400KHz, have 100MHz, thus (1/(400*10^3)*100*10^6)/2, note div by 2 is for need to change in cycle
@@ -384,7 +388,7 @@ always@(posedge i_clk or negedge reset_n) begin
                     state <= ACK_NACK_RX;
                     reg_sda_o <= 1'b0;
                     reg_sda_o_en <= 1'b0;
-                    next_state <= (num_byte_sent == byte_len-1) ? STOP : GRAB_DATA;
+                    next_state <= write_data_done ? STOP : GRAB_DATA;
                     num_byte_sent <= num_byte_sent + 1'b1;
                     grab_next_data <= 1'b1;
                     $display("DUT: I2C MASTER | TIMESTAMP: %t | MESSAGE: WRITE BYTE #%d SENT!", $time, num_byte_sent);
@@ -436,6 +440,11 @@ always@(posedge i_clk or negedge reset_n) begin
                 if(scl_is_high) begin
                     if(clk_i2c_cntr == START_IND_SETUP) begin
                         if(!sda_prev) begin      //checking for the ack condition (its low)
+                            if(i_stall) begin
+                                state <= STALL;    //hold current state until master deasserts stall, which denotes that it is ready to continue transaction
+                                $display("DUT: I2C MASTER | TIMESTAMP: %t | MESSAGE: ACK RECEIVED, BUT MASTER IS STALLING", $time);
+                            end
+                            else
                             state <= next_state;
                             $display("DUT: I2C MASTER | TIMESTAMP: %t | MESSAGE: rx ack encountered", $time);
                         end
@@ -451,6 +460,13 @@ always@(posedge i_clk or negedge reset_n) begin
                         end  
                         scl_is_high <= 1'b0;
                     end
+                end
+            end
+
+            STALL: begin
+                if(!i_stall) begin
+                    state <= next_state;
+                    $display("DUT: I2C MASTER | TIMESTAMP: %t | MESSAGE: MASTER UNSTALLED, CONTINUING TRANSACTION", $time);
                 end
             end
             
@@ -472,10 +488,14 @@ always@(posedge i_clk or negedge reset_n) begin
                             ack_in_prog <= 1'b0;
                         end
                         else begin
-                            reg_sda_o <= next_state == STOP ? 1'b0 : 1'bz;
+                            reg_sda_o <= next_state == STOP ? 1'b0 : 1'b0; //was 1'bz on !stop
                             reg_sda_o_en <= next_state == STOP ? 1'b1 : 1'b0;
                             en_end_indicator <= next_state == STOP ? 1'b1 : en_end_indicator;
-                            state <= next_state;
+                            if(i_stall) begin
+                                state <= STALL;    //hold current state until master deasserts stall, which denotes that it is ready to continue transaction
+                                $display("DUT: I2C MASTER | TIMESTAMP: %t | MESSAGE: ACK SENT, BUT MASTER IS STALLING", $time);
+                            end else
+                                state <= next_state;
                         end
                         scl_is_low <= 1'b0;
                     end

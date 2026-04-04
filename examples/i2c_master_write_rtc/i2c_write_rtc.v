@@ -1,6 +1,6 @@
 `default_nettype none
 
-module i2c_read_write_rtc (
+module i2c_write_rtc (
     input wire ICE_CLK,
     inout wire PERIPH_SDA, PERIPH_SCL,
     input wire PI_ICE_BTN,
@@ -59,7 +59,7 @@ i2c_master i2c_master_inst(
     .i_addr_w_rw({rtc_i2c_address, periph_i2c_rw}),
     .i_sub_addr({8'h0, periph_i2c_data_byte_addr}),
     .i_sub_len(0),
-    .i_byte_len(23'h1), //we only ever send one byte
+    .read_byte_len(23'h0), //we don't use the rx functionality in this example, so just set this to 0
     .i_data_write(periph_i2c_data_tx),
     .req_trans(periph_i2c_start),
 
@@ -71,6 +71,7 @@ i2c_master i2c_master_inst(
     .scl_pulldown(periph_scl_pulldown),
     .sda_pulldown(periph_sda_pulldown),
 
+    .write_data_done(1'b1), // tie this high since we only write one byte at a time in this example, so it's always ready for the next byte
     .req_data_chunk(),
     .busy(periph_i2c_busy),
     .nack()
