@@ -26,6 +26,11 @@ set_io periph_scl 3
 set_io -pullup yes periph_int 9
 set_io rpi_gpio8 47
 
+set_io rpi_gpio9 45
+
+set_io external_tx 11
+set_io external_rx 10
+
 # -------------------------- SYSTEM CLOCK ------------------------------------
 set_io ICE_CLK 37
 set_frequency ICE_CLK 37

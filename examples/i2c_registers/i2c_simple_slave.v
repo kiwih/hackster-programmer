@@ -29,6 +29,8 @@ module i2c_simple_slave #(
 
     output reg i2c_error_stb,
 
+    output reg i2c_active,
+
     output wire [3:0] debug_i2c_state
 );
 
@@ -104,12 +106,10 @@ end
 reg [7:0] i2c_addr_rw_reg;
 reg i2c_addr_rw_reg_ld;
 always@(posedge clk ) begin
-    i2c_addr_rw_valid_stb <= 0;
     if(~rst_n) 
         i2c_addr_rw_reg <= 8'h00;
     else if(i2c_addr_rw_reg_ld) begin
         i2c_addr_rw_reg <= i2c_buf;
-        i2c_addr_rw_valid_stb <= 1;
     end
 end
 assign i2c_addr_rw = i2c_addr_rw_reg;
@@ -186,6 +186,7 @@ always@* begin
     i2c_nak_clr <= 0;
     i2c_nak_en <= 0;
 
+    i2c_addr_rw_valid_stb <= 0;
     i2c_data_tx_loaded_stb <= 0;
     i2c_data_tx_done_stb <= 0;
     i2c_error_stb <= 0;
@@ -194,9 +195,12 @@ always@* begin
     i2c_data_rx_ld <= 0;
     i2c_tx_en <= 0;
 
+    i2c_active <= 1;
+
     next_state <= S_ERROR;
 case(state)
     S_IDLE: begin //wait for SDA to go low while SCL stays high
+        i2c_active <= 0;
         if(sda_falling_edge && scl_di_reg == 1)
             next_state <= S_START;
         else
@@ -233,9 +237,10 @@ case(state)
             //$display("Address mismatch: %h != %h", i2c_addr_rw_reg[7:1], i2c_address);
             next_state <= S_IGNORE;
         end else begin
-            if(scl_falling_edge) 
+            if(scl_falling_edge) begin
                 next_state <= S_STALL;
-            else begin
+                i2c_addr_rw_valid_stb <= 1;
+            end else begin
                 i2c_ack <= 1;
                 next_state <= S_ADDR_ACK;
             end
@@ -333,6 +338,7 @@ case(state)
     end
 
     S_IGNORE: begin
+        i2c_active <= 0;
         //wait until a stop bit
         if(sda_rising_edge == 1 && scl_di_reg == 1)
             next_state <= S_DONE;

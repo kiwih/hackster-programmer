@@ -113,17 +113,20 @@ reg i2c_buf_ld_addr_rw;
 reg i2c_buf_rx_shift_en;
 reg i2c_buf_tx_shift_en;
 always@(posedge clk) begin
+    i2c_data_tx_loaded_stb <= 0; 
     if(~rst_n || i2c_buf_clr) begin
         i2c_buf <= 8'h00;
     end else begin
-        if(i2c_buf_ld_tx == 1)
+        if(i2c_buf_ld_tx == 1) begin
             i2c_buf <= i2c_data_tx;
-        else if(i2c_buf_ld_addr_rw == 1)
+            i2c_data_tx_loaded_stb <= 1; // strobe that the data to be transmitted has been loaded into the buffer
+        end else if(i2c_buf_ld_addr_rw == 1) begin
             i2c_buf <= i2c_addr_rw;
-        else if(i2c_buf_rx_shift_en == 1) begin
+        end else if(i2c_buf_rx_shift_en == 1) begin
             i2c_buf <= {i2c_buf[6:0], sda_di_reg};
-        end else if(i2c_buf_tx_shift_en == 1)
+        end else if(i2c_buf_tx_shift_en == 1) begin
             i2c_buf <= {i2c_buf[6:0], 1'd0};
+        end
     end
 end
 
@@ -245,6 +248,8 @@ always @(*) begin
     i2c_buf_tx_shift_en <= 0;
 
     i2c_data_rx_ld <= 0;
+
+    i2c_data_tx_done_stb <= 1;
 
     transaction_active <= 1;
     transaction_stalling <= 0;
@@ -442,6 +447,7 @@ always @(*) begin
 
                     if (i2c_buf_cnt == 3'd7) begin // after we've shifted out all 8 bits of data
                         next_state <= S_ACK_WRITE_DATA;
+                        i2c_data_tx_done_stb <= 1; // strobe that the data byte has been fully transmitted after the last bit is sent out
                     end
                 end
             end

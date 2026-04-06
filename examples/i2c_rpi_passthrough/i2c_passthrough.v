@@ -8,26 +8,35 @@ module i2c_passthrough(
 
     input wire periph_int,
     output wire rpi_gpio8,
+    input wire rpi_gpio9,
 
     input wire appmicro_tx,
     output wire appmicro_rx,
     input wire rpi_tx,
     output wire rpi_rx,
 
-    output reg ICE_LED
+    output wire external_tx, //for debugging purposes, we'll expose RPI UART TX/RX via the unpopulated U10 socket
+    input wire external_rx,
+
+    output wire ICE_LED,
+    output wire RGB_B
 
 );
 
-reg [24:0] counter = 0;
-always @(posedge ICE_CLK) begin
-    counter <= counter + 1;
-    ICE_LED <= counter[23];
-end
+// reg [24:0] counter = 0;
+// always @(posedge ICE_CLK) begin
+//     counter <= counter + 1;
+//     ICE_LED <= counter[23];
+// end
 
-assign rpi_gpio8 = periph_int; //just passthrough the interrupt pin as well, for testing purposes
-assign appmicro_rx = rpi_tx;
-assign rpi_rx = appmicro_tx;
+assign ICE_LED = 0;
 
+assign rpi_gpio8 = periph_int; //passthrough the interrupt pin
+
+assign appmicro_rx = external_tx;
+assign rpi_rx = external_rx;
+
+assign RGB_B = rpi_gpio9; //just passthrough this gpio pin as well
 
 wire enable_pasthrough = 1; //set to 1 to enable passthrough, 0 to disable
     

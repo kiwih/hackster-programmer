@@ -56,6 +56,29 @@ def read_pcf8563():
         "voltage_low_flag": vl,
     }
 
+def create_one_minute_timer():
+    #need to write the following sequence
+    # reg_timer_control = timer_disable_60_per_min
+    # reg_cs2 = cs2_tie
+    # reg_timer = 60 (peripheral will count down from this value and trigger an interrupt when it hits 0)
+    # reg_timer_control = timer_enable_60_per_min
+
+    # localparam [7:1] rtc_i2c_address = 7'h51; // RTC address
+
+    # localparam [7:0] reg_cs2 = 8'h01;
+    # localparam [7:0] reg_timer_control = 8'h0E;
+    # localparam [7:0] reg_timer = 8'h0F;
+
+    # localparam [7:0] cs2_tie = 8'h01; // enable timer interrupt
+    # localparam [7:0] timer_disable_60_per_min = 8'h02; // TE=0, TD=10
+    # localparam [7:0] timer_enable_60_per_min = 8'h82; // TE=1, TD=10
+
+    i2c.write(RTC_ADDR, bytes([0x0E, 0x02])) # reg_timer_control = timer_disable_60_per_min
+    i2c.write(RTC_ADDR, bytes([0x01, 0x01])) # reg_cs2 = cs2_tie
+    i2c.write(RTC_ADDR, bytes([0x0F, 60])) # reg_timer = 60 (peripheral will count down from this value and trigger an interrupt when it hits 0)
+    i2c.write(RTC_ADDR, bytes([0x0E, 0x82])) # reg_timer_control = timer_enable_60_per_min
+
+
 # Check I2C bus
 devices = i2c.scan()
 print("I2C devices found:", devices, [hex(d) for d in devices])
